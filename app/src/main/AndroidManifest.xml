@@ -29,6 +29,12 @@
             android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
             
+        <!-- Signup Activity -->
+        <activity
+            android:name=".auth.SignupActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
