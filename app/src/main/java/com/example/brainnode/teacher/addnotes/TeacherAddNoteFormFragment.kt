@@ -55,8 +55,8 @@ class TeacherAddNoteFormFragment : Fragment() {
 
     private fun setupClickListeners() {
         btnBackToLessons.setOnClickListener {
-            // Navigate back to the subject selection screen
-            findNavController().popBackStack()
+            // Navigate back to the lessons list screen
+            parentFragmentManager.popBackStack()
         }
 
         btnPublish.setOnClickListener {
@@ -119,7 +119,7 @@ class TeacherAddNoteFormFragment : Fragment() {
         Toast.makeText(context, "Note published successfully!", Toast.LENGTH_SHORT).show()
 
         // Navigate back to lessons
-        findNavController().popBackStack()
+        parentFragmentManager.popBackStack()
     }
 
     private fun saveNoteToDatabase(note: Note) {

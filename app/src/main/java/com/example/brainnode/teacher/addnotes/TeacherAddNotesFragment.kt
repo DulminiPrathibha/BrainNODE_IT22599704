@@ -57,10 +57,17 @@ class TeacherAddNotesFragment : Fragment() {
     }
 
     private fun navigateToAddNoteForm(subjectName: String) {
-        // Create the fragment with subject name
-        val fragment = TeacherAddNoteFormFragment.newInstance(subjectName)
+        // Navigate to lessons list first, then to add note form
+        val subjectCode = when (subjectName) {
+            "Operating System" -> "OS"
+            "Statistics" -> "STAT"
+            "Database" -> "DB"
+            "Programming" -> "PROG"
+            else -> ""
+        }
         
-        // Replace current fragment with the form fragment
+        val fragment = TeacherLessonsListFragment.newInstance(subjectName, subjectCode)
+        
         parentFragmentManager.beginTransaction()
             .replace(R.id.fragment_teacher_home, fragment)
             .addToBackStack(null)
