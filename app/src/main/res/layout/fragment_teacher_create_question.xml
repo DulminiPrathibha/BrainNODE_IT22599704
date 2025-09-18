@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- App Icon -->
+        <ImageView
+            android:id="@+id/ivAppIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/app_icon"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- App Name -->
+        <TextView
+            android:id="@+id/tvAppName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="BrainNODE"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="@id/ivAppIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivAppIcon"
+            app:layout_constraintStart_toEndOf="@id/ivAppIcon" />
+
+        <!-- Question Number Indicator -->
+        <TextView
+            android:id="@+id/tvQuestionNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Question 1 of 5"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/ivAppIcon"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Question Input -->
+        <EditText
+            android:id="@+id/etQuestion"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/question_input_background"
+            android:hint="1. Add the question..."
+            android:textColorHint="#666666"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:inputType="text"
+            android:maxLines="2"
+            app:layout_constraintTop_toBottomOf="@id/tvQuestionNumber"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Correct Answer Input -->
+        <EditText
+            android:id="@+id/etCorrectAnswer"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/correct_answer_background"
+            android:hint="Add the correct answer..."
+            android:textColorHint="#666666"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:inputType="text"
+            android:maxLines="2"
+            app:layout_constraintTop_toBottomOf="@id/etQuestion"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Wrong Answer 1 -->
+        <EditText
+            android:id="@+id/etWrongAnswer1"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/wrong_answer_background"
+            android:hint="Add the wrong answer..."
+            android:textColorHint="#666666"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:inputType="text"
+            android:maxLines="2"
+            app:layout_constraintTop_toBottomOf="@id/etCorrectAnswer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Wrong Answer 2 -->
+        <EditText
+            android:id="@+id/etWrongAnswer2"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/wrong_answer_background"
+            android:hint="Add the wrong answer..."
+            android:textColorHint="#666666"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:inputType="text"
+            android:maxLines="2"
+            app:layout_constraintTop_toBottomOf="@id/etWrongAnswer1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Wrong Answer 3 -->
+        <EditText
+            android:id="@+id/etWrongAnswer3"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/wrong_answer_background"
+            android:hint="Add the wrong answer..."
+            android:textColorHint="#666666"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:inputType="text"
+            android:maxLines="2"
+            app:layout_constraintTop_toBottomOf="@id/etWrongAnswer2"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Mistake Card Description -->
+        <EditText
+            android:id="@+id/etMistakeDescription"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/mistake_card_background"
+            android:hint="Add Mistake Card Description..."
+            android:textColorHint="#666666"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp"
+            android:inputType="textMultiLine"
+            android:gravity="top|start"
+            android:maxLines="5"
+            app:layout_constraintTop_toBottomOf="@id/etWrongAnswer3"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Next Button -->
+        <Button
+            android:id="@+id/btnNext"
+            android:layout_width="120dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp"
+            android:background="@drawable/button_background_primary"
+            android:text="Next"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            app:layout_constraintTop_toBottomOf="@id/etMistakeDescription"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
