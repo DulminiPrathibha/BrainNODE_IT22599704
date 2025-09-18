@@ -1,6 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/nav_graph_teacher">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph_teacher"
+    app:startDestination="@id/teacherQuizListFragment">
+
+    <fragment
+        android:id="@+id/teacherQuizListFragment"
+        android:name="com.example.brainnode.teacher.quizzes.TeacherQuizListFragment"
+        android:label="Quiz List"
+        tools:layout="@layout/fragment_teacher_quiz_list">
+        
+        <action
+            android:id="@+id/action_quizList_to_addQuiz"
+            app:destination="@id/teacherAddQuizzesFragment" />
+            
+    </fragment>
+
+    <fragment
+        android:id="@+id/teacherAddQuizzesFragment"
+        android:name="com.example.brainnode.teacher.addquizzes.TeacherAddQuizzesFragment"
+        android:label="Add Quiz"
+        tools:layout="@layout/fragment_teacher_add_quizzes">
+        
+        <action
+            android:id="@+id/action_addQuiz_to_createQuestion"
+            app:destination="@id/teacherCreateQuestionFragment" />
+            
+    </fragment>
+
+    <fragment
+        android:id="@+id/teacherCreateQuestionFragment"
+        android:name="com.example.brainnode.teacher.addquizzes.TeacherCreateQuestionFragment"
+        android:label="Create Question"
+        tools:layout="@layout/fragment_teacher_create_question">
+        
+        <action
+            android:id="@+id/action_createQuestion_to_quizList"
+            app:destination="@id/teacherQuizListFragment"
+            app:popUpTo="@id/teacherQuizListFragment"
+            app:popUpToInclusive="false" />
+            
+    </fragment>
 
 </navigation>

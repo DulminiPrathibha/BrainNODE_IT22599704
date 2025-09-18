@@ -148,8 +148,18 @@ class TeacherCreateQuestionFragment : Fragment() {
     }
 
     private fun navigateToQuizCompletion() {
-        // Navigate back to teacher home or show completion message
-        parentFragmentManager.popBackStack()
-        // You can also show a success message or navigate to a completion screen
+        // Navigate to quiz list screen after completing all questions
+        val quizListFragment = com.example.brainnode.teacher.quizzes.TeacherQuizListFragment.newInstance()
+        
+        val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
+        transaction.replace(R.id.fragment_teacher_home, quizListFragment)
+        // Clear the back stack to prevent going back to question creation
+        for (i in 0 until parentFragmentManager.backStackEntryCount) {
+            parentFragmentManager.popBackStack()
+        }
+        transaction.commit()
+        
+        // You can also show a success message
+        // Toast.makeText(requireContext(), "Quiz created successfully!", Toast.LENGTH_SHORT).show()
     }
 }
