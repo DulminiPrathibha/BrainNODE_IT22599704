@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
 import com.example.brainnode.R
+import com.example.brainnode.student.quizzes.QuizzesFragment
 
 class StudentHomeFragment : Fragment() {
 
@@ -35,7 +37,12 @@ class StudentHomeFragment : Fragment() {
         }
         
         quizLayout.setOnClickListener {
-            // TODO: Navigate to Quiz screen
+            // Navigate to Quiz screen
+            val quizzesFragment = QuizzesFragment()
+            val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container, quizzesFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
         }
     }
 }
