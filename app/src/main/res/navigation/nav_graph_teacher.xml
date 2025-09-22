@@ -43,4 +43,10 @@
             
     </fragment>
 
+    <fragment
+        android:id="@+id/manageStudentsProgressFragment"
+        android:name="com.example.brainnode.teacher.progress.ManageStudentsProgressFragment"
+        android:label="Student Progress"
+        tools:layout="@layout/fragment_teacher_manage_students_progress" />
+
 </navigation>
