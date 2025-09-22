@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.brainnode.R
 import com.example.brainnode.student.quizzes.QuizzesFragment
+import com.example.brainnode.student.MistakeCardsFragment
 
 class StudentHomeFragment : Fragment() {
 
@@ -29,7 +30,12 @@ class StudentHomeFragment : Fragment() {
         val quizLayout = view.findViewById<LinearLayout>(R.id.llQuiz)
         
         mistakeCardsLayout.setOnClickListener {
-            // TODO: Navigate to Mistake Cards screen
+            // Navigate to Mistake Cards screen
+            val mistakeCardsFragment = MistakeCardsFragment()
+            val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container, mistakeCardsFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
         }
         
         notesLayout.setOnClickListener {
