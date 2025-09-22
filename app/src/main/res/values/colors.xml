@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Quiz Colors -->
+    <color name="answer_selected_background">#FFE0CC</color>
+    <color name="answer_unselected_background">#E0E0E0</color>
+    <color name="primary_orange">#FF6B35</color>
 </resources>
