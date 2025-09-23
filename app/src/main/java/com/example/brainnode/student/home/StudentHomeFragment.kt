@@ -10,6 +10,7 @@ import androidx.fragment.app.FragmentTransaction
 import com.example.brainnode.R
 import com.example.brainnode.student.quizzes.QuizzesFragment
 import com.example.brainnode.student.MistakeCardsFragment
+import com.example.brainnode.student.notes.NotesSubjectSelectionFragment
 
 class StudentHomeFragment : Fragment() {
 
@@ -39,7 +40,12 @@ class StudentHomeFragment : Fragment() {
         }
         
         notesLayout.setOnClickListener {
-            // TODO: Navigate to Notes screen
+            // Navigate to Notes Subject Selection screen
+            val notesSubjectSelectionFragment = NotesSubjectSelectionFragment()
+            val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container, notesSubjectSelectionFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
         }
         
         quizLayout.setOnClickListener {
