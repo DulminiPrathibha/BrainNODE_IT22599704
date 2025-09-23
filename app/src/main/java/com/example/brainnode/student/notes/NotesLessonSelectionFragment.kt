@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
 import com.example.brainnode.R
 import com.example.brainnode.databinding.FragmentStudentNotesLessonSelectionBinding
 
@@ -94,11 +95,15 @@ class NotesLessonSelectionFragment : Fragment() {
             putString("lesson_title", lessonTitle)
         }
         
-        // For now, just log the selection - you can implement navigation later
-        android.util.Log.d("NotesLessonSelection", "Selected: $subjectName - $lessonTitle")
+        // Navigate to notes content fragment
+        val studentNotesFragment = StudentNotesFragment().apply {
+            arguments = bundle
+        }
         
-        // TODO: Navigate to notes content fragment when implemented
-        // findNavController().navigate(R.id.action_to_notesContentFragment, bundle)
+        val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
+        transaction.replace(R.id.fragment_container, studentNotesFragment)
+        transaction.addToBackStack(null)
+        transaction.commit()
     }
 
     override fun onDestroyView() {
