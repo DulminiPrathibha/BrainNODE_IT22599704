@@ -7,12 +7,17 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.brainnode.R
 import com.example.brainnode.student.home.StudentMainActivity
+import com.google.firebase.firestore.FirebaseFirestore
+import android.util.Log
 
 class LoginActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        
+        // Test Firebase connection
+        testFirebaseConnection()
         
         // Set up Continue button click listener
         val btnContinue = findViewById<Button>(R.id.btnContinue)
@@ -29,5 +34,17 @@ class LoginActivity : AppCompatActivity() {
             val intent = Intent(this, SignupActivity::class.java)
             startActivity(intent)
         }
+    }
+    
+    private fun testFirebaseConnection() {
+        FirebaseFirestore.getInstance()
+            .collection("test")
+            .add(mapOf("message" to "Hello Firebase!", "timestamp" to System.currentTimeMillis()))
+            .addOnSuccessListener { documentReference ->
+                Log.d("Firebase", "SUCCESS: Document added with ID: ${documentReference.id}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firebase", "ERROR: Failed to add document", e)
+            }
     }
 }

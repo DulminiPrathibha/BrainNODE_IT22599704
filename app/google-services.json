@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "741119056407",
+    "project_id": "brainnode-1a29e",
+    "storage_bucket": "brainnode-1a29e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741119056407:android:e4fd559a36b3659566da52",
+        "android_client_info": {
+          "package_name": "com.example.brainnode"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPvoZuX5-1WztgNpNfcumC9hVXoFHht-E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
