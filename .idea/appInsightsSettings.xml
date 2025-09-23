@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.brainnode" />
+                  <option name="mobileSdkAppId" value="1:741119056407:android:e4fd559a36b3659566da52" />
+                  <option name="projectId" value="brainnode-1a29e" />
+                  <option name="projectNumber" value="741119056407" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
