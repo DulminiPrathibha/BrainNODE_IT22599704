@@ -34,4 +34,12 @@ class AuthRepository {
     fun isUserLoggedIn(): Boolean {
         return authService.isUserLoggedIn()
     }
+    
+    suspend fun signInWithGoogle(idToken: String, name: String, userType: UserType): Result<User> {
+        return authService.signInWithGoogle(idToken, name, userType)
+    }
+    
+    suspend fun checkIfUserExists(idToken: String): Result<User?> {
+        return authService.checkIfUserExists(idToken)
+    }
 }

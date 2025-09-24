@@ -4,6 +4,7 @@ import com.example.brainnode.data.models.User
 import com.example.brainnode.data.models.UserType
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.Flow
@@ -128,6 +129,83 @@ class FirebaseAuthService {
         return try {
             auth.sendPasswordResetEmail(email).await()
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun signInWithGoogle(idToken: String, name: String, userType: UserType): Result<User> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val firebaseUser = authResult.user
+            
+            if (firebaseUser != null) {
+                // Check if user already exists
+                val userDoc = firestore.collection("users")
+                    .document(firebaseUser.uid)
+                    .get()
+                    .await()
+                
+                val user = if (userDoc.exists()) {
+                    // Existing user - update last login
+                    val existingUser = userDoc.toObject(User::class.java)!!
+                    firestore.collection("users")
+                        .document(firebaseUser.uid)
+                        .update("lastLoginAt", System.currentTimeMillis())
+                        .await()
+                    existingUser.copy(lastLoginAt = System.currentTimeMillis())
+                } else {
+                    // New user - create profile
+                    val newUser = User(
+                        uid = firebaseUser.uid,
+                        email = firebaseUser.email ?: "",
+                        name = name,
+                        userType = userType,
+                        createdAt = System.currentTimeMillis(),
+                        lastLoginAt = System.currentTimeMillis()
+                    )
+                    
+                    firestore.collection("users")
+                        .document(firebaseUser.uid)
+                        .set(newUser)
+                        .await()
+                    
+                    newUser
+                }
+                
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Failed to sign in with Google"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun checkIfUserExists(idToken: String): Result<User?> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val firebaseUser = authResult.user
+            
+            if (firebaseUser != null) {
+                // Check if user profile exists in Firestore
+                val userDoc = firestore.collection("users")
+                    .document(firebaseUser.uid)
+                    .get()
+                    .await()
+                
+                if (userDoc.exists()) {
+                    val existingUser = userDoc.toObject(User::class.java)
+                    Result.success(existingUser)
+                } else {
+                    // User authenticated with Google but no profile in Firestore (new user)
+                    Result.success(null)
+                }
+            } else {
+                Result.failure(Exception("Failed to authenticate with Google"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

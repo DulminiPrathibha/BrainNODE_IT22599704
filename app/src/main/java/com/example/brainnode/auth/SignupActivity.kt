@@ -4,12 +4,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.brainnode.R
 import com.example.brainnode.data.repository.AuthRepository
 import com.example.brainnode.data.models.UserType
+import com.example.brainnode.utils.GoogleSignInHelper
+import com.example.brainnode.utils.RoleSelectionDialog
+import com.example.brainnode.student.home.StudentMainActivity
+import com.example.brainnode.teacher.TeacherMainActivity
 import kotlinx.coroutines.launch
 
 class SignupActivity : AppCompatActivity() {
@@ -21,8 +26,10 @@ class SignupActivity : AppCompatActivity() {
     private lateinit var btnStudent: Button
     private lateinit var btnTeacher: Button
     private lateinit var btnContinue: Button
+    private lateinit var ivGoogleLogin: ImageView
     
     private val authRepository = AuthRepository()
+    private lateinit var googleSignInHelper: GoogleSignInHelper
     private var selectedUserType: UserType = UserType.STUDENT
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,6 +48,10 @@ class SignupActivity : AppCompatActivity() {
         btnStudent = findViewById(R.id.btnStudent)
         btnTeacher = findViewById(R.id.btnTeacher)
         btnContinue = findViewById(R.id.btnContinue)
+        ivGoogleLogin = findViewById(R.id.ivGoogleLogin)
+        
+        // Initialize Google Sign-In helper
+        googleSignInHelper = GoogleSignInHelper(this)
         
         // Set default selection to Student
         selectUserType(UserType.STUDENT)
@@ -63,6 +74,11 @@ class SignupActivity : AppCompatActivity() {
         findViewById<android.widget.TextView>(R.id.tvLogIn).setOnClickListener {
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
+        }
+        
+        // Google Sign-In click listener
+        ivGoogleLogin.setOnClickListener {
+            handleGoogleSignIn()
         }
     }
     
@@ -161,5 +177,54 @@ class SignupActivity : AppCompatActivity() {
         }
         
         return true
+    }
+    
+    private fun handleGoogleSignIn() {
+        val signInIntent = googleSignInHelper.getSignInIntent()
+        startActivityForResult(signInIntent, GoogleSignInHelper.RC_SIGN_IN)
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == GoogleSignInHelper.RC_SIGN_IN) {
+            val account = googleSignInHelper.handleSignInResult(data)
+            if (account != null) {
+                // Show role selection dialog
+                showRoleSelectionDialog(account.displayName ?: account.email ?: "User", account.idToken ?: "")
+            } else {
+                Toast.makeText(this, "Google Sign-In failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun showRoleSelectionDialog(userName: String, idToken: String) {
+        val dialog = RoleSelectionDialog(this) { selectedRole ->
+            // Proceed with Google Sign-In using selected role
+            proceedWithGoogleSignIn(userName, idToken, selectedRole)
+        }
+        dialog.show()
+    }
+    
+    private fun proceedWithGoogleSignIn(userName: String, idToken: String, userType: UserType) {
+        lifecycleScope.launch {
+            val result = authRepository.signInWithGoogle(idToken, userName, userType)
+            
+            result.fold(
+                onSuccess = { user ->
+                    // Navigate to appropriate home page
+                    val intent = when (userType) {
+                        UserType.STUDENT -> Intent(this@SignupActivity, StudentMainActivity::class.java)
+                        UserType.TEACHER -> Intent(this@SignupActivity, TeacherMainActivity::class.java)
+                    }
+                    
+                    startActivity(intent)
+                    finish()
+                },
+                onFailure = { exception ->
+                    Toast.makeText(this@SignupActivity, "Google Sign-In failed: ${exception.message}", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
     }
 }

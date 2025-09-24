@@ -12,7 +12,20 @@
           "package_name": "com.example.brainnode"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "741119056407-d6642ijlukls2tpnlcifle8o2kdduj7l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.brainnode",
+            "certificate_hash": "0728239cdb90f12b14566d9a9b92ff1d0ac413b5"
+          }
+        },
+        {
+          "client_id": "741119056407-esqllvv3160l0tppae31f4b3t70e0qkb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCPvoZuX5-1WztgNpNfcumC9hVXoFHht-E"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741119056407-ec635gq1itjfckupjm02nhcqhcutgugo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
