@@ -68,6 +68,10 @@ class TeacherAddQuizzesFragment : Fragment() {
     }
     
     private fun navigateToCreateQuestion(subjectName: String, totalQuestions: Int) {
+        // Clear any previous quiz creation data
+        val sharedPref = requireContext().getSharedPreferences("quiz_creation", android.content.Context.MODE_PRIVATE)
+        sharedPref.edit().clear().apply()
+        
         val createQuestionFragment = TeacherCreateQuestionFragment.newInstance(
             questionNumber = 1,
             totalQuestions = totalQuestions,

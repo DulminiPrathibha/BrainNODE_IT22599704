@@ -257,6 +257,9 @@ class TeacherCreateQuestionFragment : Fragment() {
     }
 
     private fun navigateToNextQuestion() {
+        // Save current question before navigating
+        saveCurrentQuestionToSharedPreferences()
+        
         if (isEditMode) {
             // In edit mode, navigate to next question with edit data
             val nextQuestionFragment = TeacherCreateQuestionFragment()
@@ -292,8 +295,9 @@ class TeacherCreateQuestionFragment : Fragment() {
             // In edit mode, update the existing quiz
             updateExistingQuiz()
         } else {
-            // In create mode, create a new quiz
-            createNewQuiz()
+            // In create mode, save this question and create the quiz
+            saveCurrentQuestionToSharedPreferences()
+            createNewQuizWithAllQuestions()
         }
     }
     
@@ -352,7 +356,7 @@ class TeacherCreateQuestionFragment : Fragment() {
                     "subject" to subjectEnum.name,
                     "title" to "$subjectName Quiz",
                     "description" to "Quiz created by ${currentUser.name}",
-                    "totalQuestions" to createdQuestions.size,
+                    "totalQuestions" to totalQuestions,
                     "timeLimit" to 30,
                     "createdAt" to System.currentTimeMillis(),
                     "isPublished" to true,
@@ -464,6 +468,131 @@ class TeacherCreateQuestionFragment : Fragment() {
             }, 1000)
         } catch (e: Exception) {
             // Ignore errors
+        }
+    }
+    
+    private fun saveCurrentQuestionToSharedPreferences() {
+        try {
+            val view = requireView()
+            val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
+            val etCorrectAnswer = view.findViewById<EditText>(R.id.etCorrectAnswer)
+            val etWrongAnswer1 = view.findViewById<EditText>(R.id.etWrongAnswer1)
+            val etWrongAnswer2 = view.findViewById<EditText>(R.id.etWrongAnswer2)
+            val etWrongAnswer3 = view.findViewById<EditText>(R.id.etWrongAnswer3)
+            val etMistakeDescription = view.findViewById<EditText>(R.id.etMistakeDescription)
+            
+            val questionText = etQuestion.text.toString().trim()
+            val correctAnswerText = etCorrectAnswer.text.toString().trim()
+            val wrongAnswers = listOf(
+                etWrongAnswer1.text.toString().trim(),
+                etWrongAnswer2.text.toString().trim(),
+                etWrongAnswer3.text.toString().trim()
+            ).filter { it.isNotEmpty() }
+            
+            // Create options
+            val allOptions = mutableListOf<String>()
+            allOptions.add(correctAnswerText)
+            allOptions.addAll(wrongAnswers)
+            allOptions.shuffle()
+            
+            val correctAnswerIndex = allOptions.indexOf(correctAnswerText)
+            val options = allOptions.mapIndexed { index, text ->
+                hashMapOf(
+                    "id" to UUID.randomUUID().toString(),
+                    "text" to text,
+                    "isCorrect" to (index == correctAnswerIndex)
+                )
+            }
+            
+            val questionData = hashMapOf(
+                "id" to UUID.randomUUID().toString(),
+                "questionText" to questionText,
+                "options" to options,
+                "correctAnswerId" to options[correctAnswerIndex]["id"] as String,
+                "explanation" to etMistakeDescription.text.toString().trim()
+            )
+            
+            // Save to SharedPreferences
+            val sharedPref = requireContext().getSharedPreferences("quiz_creation", android.content.Context.MODE_PRIVATE)
+            val editor = sharedPref.edit()
+            
+            // Get existing questions
+            val existingQuestionsJson = sharedPref.getString("questions", "[]")
+            val existingQuestions = com.google.gson.Gson().fromJson(
+                existingQuestionsJson, 
+                object : com.google.gson.reflect.TypeToken<MutableList<Map<String, Any>>>() {}.type
+            ) as MutableList<Map<String, Any>>
+            
+            // Add current question
+            existingQuestions.add(questionData)
+            
+            // Save back to SharedPreferences
+            val questionsJson = com.google.gson.Gson().toJson(existingQuestions)
+            editor.putString("questions", questionsJson)
+            editor.putString("subject", subjectName)
+            editor.putInt("totalQuestions", totalQuestions)
+            editor.apply()
+            
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Error saving question: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun createNewQuizWithAllQuestions() {
+        lifecycleScope.launch {
+            try {
+                val currentUserResult = authRepository.getCurrentUser()
+                val currentUser = currentUserResult.getOrNull()
+                
+                if (currentUser == null) {
+                    Toast.makeText(requireContext(), "Please log in to create quizzes", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+
+                Toast.makeText(requireContext(), "Saving quiz...", Toast.LENGTH_SHORT).show()
+
+                // Get all questions from SharedPreferences
+                val sharedPref = requireContext().getSharedPreferences("quiz_creation", android.content.Context.MODE_PRIVATE)
+                val questionsJson = sharedPref.getString("questions", "[]")
+                val allQuestions = com.google.gson.Gson().fromJson(
+                    questionsJson, 
+                    object : com.google.gson.reflect.TypeToken<List<Map<String, Any>>>() {}.type
+                ) as List<Map<String, Any>>
+
+                // Create quiz data with all questions
+                val quizData = hashMapOf(
+                    "id" to UUID.randomUUID().toString(),
+                    "teacherId" to currentUser.uid,
+                    "teacherName" to currentUser.name,
+                    "subject" to subjectEnum.name,
+                    "title" to "$subjectName Quiz",
+                    "description" to "Quiz created by ${currentUser.name}",
+                    "totalQuestions" to totalQuestions,
+                    "timeLimit" to 30,
+                    "createdAt" to System.currentTimeMillis(),
+                    "isPublished" to true,
+                    "questions" to allQuestions
+                )
+
+                // Save to Firestore
+                val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val docRef = firestore.collection("quizzes").document(quizData["id"] as String)
+                
+                docRef.set(quizData)
+                    .addOnSuccessListener {
+                        // Clear SharedPreferences
+                        sharedPref.edit().clear().apply()
+                        
+                        Toast.makeText(requireContext(), "Quiz saved successfully!", Toast.LENGTH_LONG).show()
+                        navigateBackToQuizList()
+                    }
+                    .addOnFailureListener { exception ->
+                        Toast.makeText(requireContext(), "Failed to save quiz: ${exception.message}", Toast.LENGTH_LONG).show()
+                    }
+
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 }
