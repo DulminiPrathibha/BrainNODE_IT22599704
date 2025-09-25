@@ -8,11 +8,14 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.brainnode.R
+import com.example.brainnode.data.models.QuizOption
 
 class AnswerOptionsAdapter(
-    private val options: MutableList<AnswerOption>,
-    private val onOptionSelected: (AnswerOption) -> Unit
+    private val options: MutableList<QuizOption>,
+    private val onOptionSelected: (QuizOption) -> Unit
 ) : RecyclerView.Adapter<AnswerOptionsAdapter.AnswerOptionViewHolder>() {
+    
+    private var selectedOptionId: String? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AnswerOptionViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -26,11 +29,8 @@ class AnswerOptionsAdapter(
 
     override fun getItemCount(): Int = options.size
 
-    fun updateSelection(selectedOption: AnswerOption) {
-        // Clear all selections
-        options.forEach { it.isSelected = false }
-        // Set the selected option
-        selectedOption.isSelected = true
+    fun updateSelection(selectedOption: QuizOption) {
+        selectedOptionId = selectedOption.id
         notifyDataSetChanged()
     }
 
@@ -39,23 +39,24 @@ class AnswerOptionsAdapter(
         private val answerText: TextView = itemView.findViewById(R.id.answerText)
         private val selectionIndicator: View = itemView.findViewById(R.id.selectionIndicator)
 
-        fun bind(option: AnswerOption) {
+        fun bind(option: QuizOption) {
             answerText.text = option.text
+            val isSelected = option.id == selectedOptionId
 
             // Update UI based on selection state
-            if (option.isSelected) {
+            if (isSelected) {
                 answerCard.setCardBackgroundColor(
-                    ContextCompat.getColor(itemView.context, R.color.answer_selected_background)
+                    ContextCompat.getColor(itemView.context, android.R.color.holo_blue_light)
                 )
-                selectionIndicator.background = ContextCompat.getDrawable(
-                    itemView.context, R.drawable.selection_indicator_selected
+                selectionIndicator.setBackgroundColor(
+                    ContextCompat.getColor(itemView.context, android.R.color.holo_blue_dark)
                 )
             } else {
                 answerCard.setCardBackgroundColor(
-                    ContextCompat.getColor(itemView.context, R.color.answer_unselected_background)
+                    ContextCompat.getColor(itemView.context, android.R.color.white)
                 )
-                selectionIndicator.background = ContextCompat.getDrawable(
-                    itemView.context, R.drawable.selection_indicator_unselected
+                selectionIndicator.setBackgroundColor(
+                    ContextCompat.getColor(itemView.context, android.R.color.darker_gray)
                 )
             }
 

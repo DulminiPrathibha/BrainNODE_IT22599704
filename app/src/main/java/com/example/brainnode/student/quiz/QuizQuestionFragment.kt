@@ -9,9 +9,15 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.brainnode.R
+import com.example.brainnode.data.models.Quiz
+import com.example.brainnode.data.models.QuizQuestion
+import com.example.brainnode.data.models.QuizOption
+import com.example.brainnode.data.repository.QuizRepository
+import kotlinx.coroutines.launch
 
 class QuizQuestionFragment : Fragment() {
 
@@ -24,20 +30,24 @@ class QuizQuestionFragment : Fragment() {
     
     private lateinit var answerOptionsAdapter: AnswerOptionsAdapter
     private var countDownTimer: CountDownTimer? = null
-    private var selectedAnswer: AnswerOption? = null
+    private var selectedAnswer: QuizOption? = null
     
-    // Sample data - replace with actual data from your backend
-    private val currentQuestion = QuizQuestion(
-        id = "1",
-        questionText = "1. Which of the following is responsible for managing memory in an OS?",
-        options = mutableListOf(
-            AnswerOption("A", "A) File Manager"),
-            AnswerOption("B", "B) Process Scheduler"),
-            AnswerOption("C", "C) Memory Manager"),
-            AnswerOption("D", "D) Device Driver")
-        ),
-        correctAnswerId = "C"
-    )
+    private val quizRepository = QuizRepository()
+    private var currentQuiz: Quiz? = null
+    private var currentQuestionIndex = 0
+    private var quizId: String = ""
+    
+    companion object {
+        private const val ARG_QUIZ_ID = "quiz_id"
+        
+        fun newInstance(quizId: String): QuizQuestionFragment {
+            val fragment = QuizQuestionFragment()
+            val args = Bundle()
+            args.putString(ARG_QUIZ_ID, quizId)
+            fragment.arguments = args
+            return fragment
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,11 +60,13 @@ class QuizQuestionFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        // Get quiz ID from arguments
+        arguments?.getString(ARG_QUIZ_ID)?.let { id ->
+            quizId = id
+        }
+        
         initializeViews(view)
-        setupRecyclerView()
-        setupQuestion()
-        startTimer()
-        setupNextButton()
+        loadQuizData()
     }
 
     private fun initializeViews(view: View) {
@@ -65,61 +77,124 @@ class QuizQuestionFragment : Fragment() {
         answersRecyclerView = view.findViewById(R.id.answersRecyclerView)
         nextButton = view.findViewById(R.id.nextButton)
     }
+    
+    private fun loadQuizData() {
+        lifecycleScope.launch {
+            val result = quizRepository.getQuizById(quizId)
+            
+            result.fold(
+                onSuccess = { quiz ->
+                    quiz?.let {
+                        currentQuiz = it
+                        if (it.questions.isNotEmpty()) {
+                            setupRecyclerView()
+                            setupQuestion()
+                            startTimer()
+                            setupNextButton()
+                        } else {
+                            // Handle empty quiz
+                            questionText.text = "This quiz has no questions available."
+                            nextButton.text = "Go Back"
+                            nextButton.setOnClickListener {
+                                parentFragmentManager.popBackStack()
+                            }
+                        }
+                    } ?: run {
+                        // Handle quiz not found
+                        questionText.text = "Quiz not found."
+                        nextButton.text = "Go Back"
+                        nextButton.setOnClickListener {
+                            parentFragmentManager.popBackStack()
+                        }
+                    }
+                },
+                onFailure = { exception ->
+                    // Handle error
+                    questionText.text = "Failed to load quiz: ${exception.message}"
+                    nextButton.text = "Go Back"
+                    nextButton.setOnClickListener {
+                        parentFragmentManager.popBackStack()
+                    }
+                }
+            )
+        }
+    }
 
     private fun setupRecyclerView() {
-        answerOptionsAdapter = AnswerOptionsAdapter(
-            currentQuestion.options.toMutableList()
-        ) { selectedOption ->
-            selectedAnswer = selectedOption
-            nextButton.isEnabled = true
-            nextButton.alpha = 1.0f
-        }
-        
-        answersRecyclerView.apply {
-            layoutManager = LinearLayoutManager(context)
-            adapter = answerOptionsAdapter
+        currentQuiz?.let { quiz ->
+            if (currentQuestionIndex < quiz.questions.size) {
+                val currentQuestion = quiz.questions[currentQuestionIndex]
+                answerOptionsAdapter = AnswerOptionsAdapter(
+                    currentQuestion.options.toMutableList()
+                ) { selectedOption ->
+                    selectedAnswer = selectedOption
+                    nextButton.isEnabled = true
+                    nextButton.alpha = 1.0f
+                }
+                
+                answersRecyclerView.apply {
+                    layoutManager = LinearLayoutManager(context)
+                    adapter = answerOptionsAdapter
+                }
+            }
         }
     }
 
     private fun setupQuestion() {
-        questionText.text = currentQuestion.questionText
-        questionCounter.text = "1/5" // Update based on actual question number
-        
-        // Initially disable next button
-        nextButton.isEnabled = false
-        nextButton.alpha = 0.5f
+        currentQuiz?.let { quiz ->
+            if (currentQuestionIndex < quiz.questions.size) {
+                val currentQuestion = quiz.questions[currentQuestionIndex]
+                questionText.text = "${currentQuestionIndex + 1}. ${currentQuestion.questionText}"
+                questionCounter.text = "${currentQuestionIndex + 1}/${quiz.questions.size}"
+                
+                // Initially disable next button
+                nextButton.isEnabled = false
+                nextButton.alpha = 0.5f
+                
+                // Update button text based on question position
+                nextButton.text = if (currentQuestionIndex == quiz.questions.size - 1) "Finish" else "Next"
+            }
+        }
     }
 
     private fun startTimer() {
-        val totalTimeInMillis = 30000L // 30 seconds
-        
-        countDownTimer = object : CountDownTimer(totalTimeInMillis, 100) {
-            override fun onTick(millisUntilFinished: Long) {
-                val secondsRemaining = millisUntilFinished / 1000.0
-                timerText.text = String.format("%.2f", secondsRemaining)
-                
-                // Update progress bar (reverse progress as time decreases)
-                val progress = ((totalTimeInMillis - millisUntilFinished) * 100 / totalTimeInMillis).toInt()
-                timerProgress.progress = progress
-            }
+        currentQuiz?.let { quiz ->
+            val totalTimeInMillis = (quiz.timeLimit * 1000).toLong()
+            
+            countDownTimer = object : CountDownTimer(totalTimeInMillis, 100) {
+                override fun onTick(millisUntilFinished: Long) {
+                    val secondsRemaining = millisUntilFinished / 1000.0
+                    timerText.text = String.format("%.2f", secondsRemaining)
+                    
+                    // Update progress bar (reverse progress as time decreases)
+                    val progress = ((totalTimeInMillis - millisUntilFinished) * 100 / totalTimeInMillis).toInt()
+                    timerProgress.progress = progress
+                }
 
-            override fun onFinish() {
-                timerText.text = "0.00"
-                timerProgress.progress = 100
-                // Auto-submit or move to next question
-                handleTimeUp()
-            }
-        }.start()
+                override fun onFinish() {
+                    timerText.text = "0.00"
+                    timerProgress.progress = 100
+                    // Auto-submit or move to next question
+                    handleTimeUp()
+                }
+            }.start()
+        }
     }
 
     private fun setupNextButton() {
         nextButton.setOnClickListener {
-            // Handle next question logic
-            selectedAnswer?.let { answer ->
-                // Process the answer
-                val isCorrect = answer.id == currentQuestion.correctAnswerId
-                // TODO: Save answer and move to next question
-                moveToNextQuestion()
+            currentQuiz?.let { quiz ->
+                if (currentQuestionIndex < quiz.questions.size) {
+                    val currentQuestion = quiz.questions[currentQuestionIndex]
+                    
+                    // Process the answer
+                    selectedAnswer?.let { answer ->
+                        val isCorrect = answer.id == currentQuestion.correctAnswerId
+                        // TODO: Save answer for final scoring
+                    }
+                    
+                    moveToNextQuestion()
+                }
             }
         }
     }
@@ -128,12 +203,28 @@ class QuizQuestionFragment : Fragment() {
         // Handle when time runs out
         nextButton.isEnabled = true
         nextButton.alpha = 1.0f
-        // TODO: Auto-submit current answer or mark as unanswered
+        // Auto-submit current answer or mark as unanswered
+        moveToNextQuestion()
     }
 
     private fun moveToNextQuestion() {
-        // TODO: Implement navigation to next question or results
         countDownTimer?.cancel()
+        
+        currentQuiz?.let { quiz ->
+            currentQuestionIndex++
+            
+            if (currentQuestionIndex < quiz.questions.size) {
+                // Move to next question
+                selectedAnswer = null
+                setupRecyclerView()
+                setupQuestion()
+                startTimer()
+            } else {
+                // Quiz completed - show results or go back
+                // TODO: Implement quiz results screen
+                parentFragmentManager.popBackStack()
+            }
+        }
     }
 
     override fun onDestroyView() {
