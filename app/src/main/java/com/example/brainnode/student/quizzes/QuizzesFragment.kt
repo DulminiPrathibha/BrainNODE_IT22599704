@@ -16,6 +16,7 @@ import com.example.brainnode.R
 import com.example.brainnode.data.models.Quiz
 import com.example.brainnode.data.models.Subject
 import com.example.brainnode.data.repository.QuizRepository
+import com.example.brainnode.data.repository.AuthRepository
 import com.example.brainnode.student.quiz.QuizQuestionFragment
 import kotlinx.coroutines.launch
 

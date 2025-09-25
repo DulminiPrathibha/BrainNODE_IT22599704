@@ -36,6 +36,8 @@ class QuizQuestionFragment : Fragment() {
     private var currentQuiz: Quiz? = null
     private var currentQuestionIndex = 0
     private var quizId: String = ""
+    private var correctAnswers = 0
+    private val userAnswers = mutableListOf<String?>()
     
     companion object {
         private const val ARG_QUIZ_ID = "quiz_id"
@@ -89,7 +91,7 @@ class QuizQuestionFragment : Fragment() {
                         if (it.questions.isNotEmpty()) {
                             setupRecyclerView()
                             setupQuestion()
-                            startTimer()
+                            startTimer() // Start timer once for entire quiz
                             setupNextButton()
                         } else {
                             // Handle empty quiz
@@ -159,12 +161,15 @@ class QuizQuestionFragment : Fragment() {
 
     private fun startTimer() {
         currentQuiz?.let { quiz ->
-            val totalTimeInMillis = (quiz.timeLimit * 1000).toLong()
+            // Calculate total time: 1 minute per question for the entire quiz
+            val totalTimeInMillis = (quiz.questions.size * 60 * 1000).toLong()
             
             countDownTimer = object : CountDownTimer(totalTimeInMillis, 100) {
                 override fun onTick(millisUntilFinished: Long) {
                     val secondsRemaining = millisUntilFinished / 1000.0
-                    timerText.text = String.format("%.2f", secondsRemaining)
+                    val minutes = (secondsRemaining / 60).toInt()
+                    val seconds = (secondsRemaining % 60).toInt()
+                    timerText.text = String.format("%d:%02d", minutes, seconds)
                     
                     // Update progress bar (reverse progress as time decreases)
                     val progress = ((totalTimeInMillis - millisUntilFinished) * 100 / totalTimeInMillis).toInt()
@@ -172,10 +177,10 @@ class QuizQuestionFragment : Fragment() {
                 }
 
                 override fun onFinish() {
-                    timerText.text = "0.00"
+                    timerText.text = "0:00"
                     timerProgress.progress = 100
-                    // Auto-submit or move to next question
-                    handleTimeUp()
+                    // Auto-submit the entire quiz when time runs out
+                    handleQuizTimeUp()
                 }
             }.start()
         }
@@ -190,7 +195,13 @@ class QuizQuestionFragment : Fragment() {
                     // Process the answer
                     selectedAnswer?.let { answer ->
                         val isCorrect = answer.id == currentQuestion.correctAnswerId
-                        // TODO: Save answer for final scoring
+                        if (isCorrect) {
+                            correctAnswers++
+                        }
+                        userAnswers.add(answer.id)
+                    } ?: run {
+                        // No answer selected
+                        userAnswers.add(null)
                     }
                     
                     moveToNextQuestion()
@@ -208,7 +219,7 @@ class QuizQuestionFragment : Fragment() {
     }
 
     private fun moveToNextQuestion() {
-        countDownTimer?.cancel()
+        // Don't cancel timer - let it continue for entire quiz
         
         currentQuiz?.let { quiz ->
             currentQuestionIndex++
@@ -218,14 +229,37 @@ class QuizQuestionFragment : Fragment() {
                 selectedAnswer = null
                 setupRecyclerView()
                 setupQuestion()
-                startTimer()
+                // Don't restart timer - it continues for entire quiz
             } else {
-                // Quiz completed - show results or go back
-                // TODO: Implement quiz results screen
-                parentFragmentManager.popBackStack()
+                // Quiz completed - show completion screen
+                countDownTimer?.cancel()
+                showQuizCompletion()
             }
         }
     }
+    
+    private fun handleQuizTimeUp() {
+        // Handle when entire quiz time runs out
+        countDownTimer?.cancel()
+        // Auto-submit the quiz and show completion
+        showQuizCompletion()
+    }
+    
+    private fun showQuizCompletion() {
+        currentQuiz?.let { quiz ->
+            val completionFragment = QuizCompletionFragment.newInstance(
+                score = correctAnswers,
+                totalQuestions = quiz.questions.size,
+                isFirstQuiz = true // For UI demo purposes, always show as first quiz
+            )
+            
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, completionFragment)
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+    
 
     override fun onDestroyView() {
         super.onDestroyView()

@@ -168,6 +168,49 @@ class FirebaseProgressService {
         }
     }
     
+    suspend fun awardBadge(studentId: String, badgeName: String): Result<Unit> {
+        return try {
+            val progressDoc = progressCollection.document(studentId)
+            val currentProgress = getStudentProgress(studentId).getOrNull()
+            
+            if (currentProgress != null) {
+                val existingAchievements = currentProgress.achievements.toMutableList()
+                
+                // Only add badge if not already earned
+                if (!existingAchievements.contains(badgeName)) {
+                    existingAchievements.add(badgeName)
+                    
+                    val updatedProgress = currentProgress.copy(achievements = existingAchievements)
+                    progressDoc.set(updatedProgress).await()
+                }
+            }
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun hasBadge(studentId: String, badgeName: String): Result<Boolean> {
+        return try {
+            val currentProgress = getStudentProgress(studentId).getOrNull()
+            val hasBadge = currentProgress?.achievements?.contains(badgeName) ?: false
+            Result.success(hasBadge)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun isFirstQuizCompletion(studentId: String): Result<Boolean> {
+        return try {
+            val currentProgress = getStudentProgress(studentId).getOrNull()
+            val isFirstQuiz = currentProgress?.totalQuizzesTaken == 0
+            Result.success(isFirstQuiz)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     private fun updateExistingProgress(currentProgress: StudentProgress, quizAttempt: QuizAttempt): StudentProgress {
         val newTotalQuizzes = currentProgress.totalQuizzesTaken + 1
         val newTotalCorrect = currentProgress.totalCorrectAnswers + quizAttempt.score

@@ -36,4 +36,16 @@ class ProgressRepository {
     suspend fun addCommonMistake(studentId: String, mistake: CommonMistake): Result<Unit> {
         return progressService.addCommonMistake(studentId, mistake)
     }
+    
+    suspend fun awardBadge(studentId: String, badgeName: String): Result<Unit> {
+        return progressService.awardBadge(studentId, badgeName)
+    }
+    
+    suspend fun hasBadge(studentId: String, badgeName: String): Result<Boolean> {
+        return progressService.hasBadge(studentId, badgeName)
+    }
+    
+    suspend fun isFirstQuizCompletion(studentId: String): Result<Boolean> {
+        return progressService.isFirstQuizCompletion(studentId)
+    }
 }
