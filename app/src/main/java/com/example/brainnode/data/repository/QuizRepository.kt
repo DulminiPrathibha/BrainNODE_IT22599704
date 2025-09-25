@@ -33,6 +33,10 @@ class QuizRepository {
         return quizService.getQuizzesBySubject(subject)
     }
     
+    suspend fun getAllQuizzes(): Result<List<Quiz>> {
+        return quizService.getAllQuizzes()
+    }
+    
     suspend fun getPublishedQuizzes(): Result<List<Quiz>> {
         return quizService.getPublishedQuizzes()
     }

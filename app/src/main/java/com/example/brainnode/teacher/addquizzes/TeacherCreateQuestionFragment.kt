@@ -4,18 +4,29 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
+import androidx.lifecycle.lifecycleScope
 import com.example.brainnode.R
+import com.example.brainnode.data.models.*
+import com.example.brainnode.data.repository.QuizRepository
+import com.example.brainnode.data.repository.AuthRepository
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.UUID
 
 class TeacherCreateQuestionFragment : Fragment() {
 
     private var currentQuestionNumber = 1
     private var totalQuestions = 5
     private var subjectName = ""
+    private val quizRepository = QuizRepository()
+    private val authRepository = AuthRepository()
+    private val createdQuestions = mutableListOf<QuizQuestion>()
+    private lateinit var subjectEnum: Subject
 
     companion object {
         private const val ARG_QUESTION_NUMBER = "question_number"
@@ -39,6 +50,14 @@ class TeacherCreateQuestionFragment : Fragment() {
             currentQuestionNumber = it.getInt(ARG_QUESTION_NUMBER, 1)
             totalQuestions = it.getInt(ARG_TOTAL_QUESTIONS, 5)
             subjectName = it.getString(ARG_SUBJECT_NAME, "")
+        }
+        
+        // Convert subject name to Subject enum
+        subjectEnum = when (subjectName.lowercase()) {
+            "operating system", "os" -> Subject.OPERATING_SYSTEM
+            "statistics", "stat" -> Subject.STATISTICS
+            "programming", "prog" -> Subject.PROGRAMMING
+            else -> Subject.OPERATING_SYSTEM
         }
     }
 
@@ -112,26 +131,47 @@ class TeacherCreateQuestionFragment : Fragment() {
     }
 
     private fun saveQuestionData(view: View) {
-        // TODO: Implement data saving logic
-        // You can save to database, shared preferences, or pass to ViewModel
         val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
         val etCorrectAnswer = view.findViewById<EditText>(R.id.etCorrectAnswer)
         val etWrongAnswer1 = view.findViewById<EditText>(R.id.etWrongAnswer1)
         val etWrongAnswer2 = view.findViewById<EditText>(R.id.etWrongAnswer2)
         val etWrongAnswer3 = view.findViewById<EditText>(R.id.etWrongAnswer3)
-        val etMistakeDescription = view.findViewById<EditText>(R.id.etMistakeDescription)
 
-        // Example: Create a data class and save it
-        // val questionData = QuestionData(
-        //     question = etQuestion.text.toString(),
-        //     correctAnswer = etCorrectAnswer.text.toString(),
-        //     wrongAnswers = listOf(
-        //         etWrongAnswer1.text.toString(),
-        //         etWrongAnswer2.text.toString(),
-        //         etWrongAnswer3.text.toString()
-        //     ),
-        //     mistakeDescription = etMistakeDescription.text.toString()
-        // )
+        val questionText = etQuestion.text.toString().trim()
+        val correctAnswerText = etCorrectAnswer.text.toString().trim()
+        val wrongAnswers = listOf(
+            etWrongAnswer1.text.toString().trim(),
+            etWrongAnswer2.text.toString().trim(),
+            etWrongAnswer3.text.toString().trim()
+        ).filter { it.isNotEmpty() }
+
+        // Create options with correct answer marked
+        val allOptions = mutableListOf<String>()
+        allOptions.add(correctAnswerText)
+        allOptions.addAll(wrongAnswers)
+        allOptions.shuffle() // Randomize option order
+
+        val correctAnswerIndex = allOptions.indexOf(correctAnswerText)
+        
+        val options = allOptions.mapIndexed { index, text ->
+            QuizOption(
+                id = UUID.randomUUID().toString(),
+                text = text,
+                isCorrect = index == correctAnswerIndex
+            )
+        }
+
+        val correctAnswerId = options[correctAnswerIndex].id
+
+        val question = QuizQuestion(
+            id = UUID.randomUUID().toString(),
+            questionText = questionText,
+            options = options,
+            correctAnswerId = correctAnswerId,
+            explanation = ""
+        )
+
+        createdQuestions.add(question)
     }
 
     private fun navigateToNextQuestion() {
@@ -141,25 +181,109 @@ class TeacherCreateQuestionFragment : Fragment() {
             subjectName
         )
         
-        val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-        transaction.replace(R.id.fragment_teacher_home, nextQuestionFragment)
-        transaction.addToBackStack(null)
-        transaction.commit()
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_teacher_home, nextQuestionFragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun navigateToQuizCompletion() {
-        // Navigate to quiz list screen after completing all questions
-        val quizListFragment = com.example.brainnode.teacher.quizzes.TeacherQuizListFragment.newInstance()
-        
-        val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-        transaction.replace(R.id.fragment_teacher_home, quizListFragment)
-        // Clear the back stack to prevent going back to question creation
-        for (i in 0 until parentFragmentManager.backStackEntryCount) {
-            parentFragmentManager.popBackStack()
+        // Use simple approach with direct Firestore access
+        lifecycleScope.launch {
+            try {
+                // Get current user info
+                val currentUserResult = authRepository.getCurrentUser()
+                val currentUser = currentUserResult.getOrNull()
+                
+                if (currentUser == null) {
+                    Toast.makeText(requireContext(), "Please log in to create quizzes", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+
+                // Validate that we have questions
+                if (createdQuestions.isEmpty()) {
+                    Toast.makeText(requireContext(), "No questions to save", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+
+                // Show saving message
+                Toast.makeText(requireContext(), "Saving quiz...", Toast.LENGTH_SHORT).show()
+
+                // Create simple quiz data for Firestore
+                val quizData = hashMapOf(
+                    "id" to UUID.randomUUID().toString(),
+                    "teacherId" to currentUser.uid,
+                    "teacherName" to currentUser.name,
+                    "subject" to subjectEnum.name,
+                    "title" to "$subjectName Quiz",
+                    "description" to "Quiz created by ${currentUser.name}",
+                    "totalQuestions" to createdQuestions.size,
+                    "timeLimit" to 30,
+                    "createdAt" to System.currentTimeMillis(),
+                    "isPublished" to true,
+                    "questions" to createdQuestions.map { question ->
+                        hashMapOf(
+                            "id" to question.id,
+                            "questionText" to question.questionText,
+                            "options" to question.options.map { option ->
+                                hashMapOf(
+                                    "id" to option.id,
+                                    "text" to option.text,
+                                    "isCorrect" to option.isCorrect
+                                )
+                            },
+                            "correctAnswerId" to question.correctAnswerId,
+                            "explanation" to question.explanation
+                        )
+                    }
+                )
+
+                // Save directly to Firestore
+                val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val docRef = firestore.collection("quizzes").document(quizData["id"] as String)
+                
+                docRef.set(quizData)
+                    .addOnSuccessListener {
+                        try {
+                            if (isAdded && context != null) {
+                                Toast.makeText(requireContext(), 
+                                    "Quiz saved successfully!", 
+                                    Toast.LENGTH_LONG).show()
+
+                                // Simple navigation without complex back stack management
+                                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                    try {
+                                        if (isAdded && context != null && parentFragmentManager != null) {
+                                            val quizListFragment = TeacherQuizListFragment()
+                                            
+                                            parentFragmentManager.beginTransaction()
+                                                .replace(R.id.fragment_teacher_home, quizListFragment)
+                                                .commitAllowingStateLoss()
+                                        }
+                                    } catch (e: Exception) {
+                                        // Navigation failed, but quiz is saved
+                                    }
+                                }, 1000) // 1 second delay
+                            }
+                        } catch (e: Exception) {
+                            // Ignore toast errors
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        val errorMessage = "Failed to save quiz: ${exception.message}"
+                        Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
+                        
+                        // Show what to do in Firebase Console
+                        Toast.makeText(requireContext(), 
+                            "Please check Firebase Console security rules", 
+                            Toast.LENGTH_LONG).show()
+                    }
+
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), 
+                    "Error: ${e.message}", 
+                    Toast.LENGTH_LONG).show()
+            }
         }
-        transaction.commit()
-        
-        // You can also show a success message
-        // Toast.makeText(requireContext(), "Quiz created successfully!", Toast.LENGTH_SHORT).show()
     }
 }

@@ -69,15 +69,15 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="24dp" />
 
-            <!-- RecyclerView for Quiz Items -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvQuizzes"
+            <!-- Quiz Container -->
+            <LinearLayout
+                android:id="@+id/llQuizContainer"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
+                android:orientation="vertical"
                 android:clipToPadding="false"
-                android:paddingBottom="80dp"
-                tools:listitem="@layout/item_quiz_subject" />
+                android:paddingBottom="80dp" />
 
             <!-- Empty State -->
             <LinearLayout

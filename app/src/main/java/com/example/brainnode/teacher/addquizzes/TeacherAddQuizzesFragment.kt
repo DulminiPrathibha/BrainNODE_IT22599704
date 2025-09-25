@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.brainnode.R
 
@@ -24,10 +27,10 @@ class TeacherAddQuizzesFragment : Fragment() {
     }
     
     private fun setupClickListeners(view: View) {
-        val btnNext = view.findViewById<android.widget.Button>(R.id.btnNext)
-        val btnViewQuizzes = view.findViewById<android.widget.Button>(R.id.btnViewQuizzes)
-        val etSubjectName = view.findViewById<android.widget.EditText>(R.id.etSubjectName)
-        val etNumberOfQuestions = view.findViewById<android.widget.EditText>(R.id.etNumberOfQuestions)
+        val btnNext = view.findViewById<Button>(R.id.btnNext)
+        val btnViewQuizzes = view.findViewById<Button>(R.id.btnViewQuizzes)
+        val etSubjectName = view.findViewById<EditText>(R.id.etSubjectName)
+        val etNumberOfQuestions = view.findViewById<EditText>(R.id.etNumberOfQuestions)
         
         btnNext.setOnClickListener {
             val subjectName = etSubjectName.text.toString().trim()
@@ -40,24 +43,24 @@ class TeacherAddQuizzesFragment : Fragment() {
         }
         
         btnViewQuizzes.setOnClickListener {
-            // TODO: Navigate to view quizzes screen
+            navigateToQuizList()
         }
     }
     
     private fun validateInputs(subjectName: String, numberOfQuestionsStr: String): Boolean {
         if (subjectName.isEmpty()) {
-            // Show error for subject name
+            Toast.makeText(requireContext(), "Subject name is required", Toast.LENGTH_SHORT).show()
             return false
         }
         
         if (numberOfQuestionsStr.isEmpty()) {
-            // Show error for number of questions
+            Toast.makeText(requireContext(), "Number of questions is required", Toast.LENGTH_SHORT).show()
             return false
         }
         
         val numberOfQuestions = numberOfQuestionsStr.toIntOrNull()
         if (numberOfQuestions == null || numberOfQuestions <= 0) {
-            // Show error for invalid number
+            Toast.makeText(requireContext(), "Please enter a valid number", Toast.LENGTH_SHORT).show()
             return false
         }
         
@@ -71,9 +74,18 @@ class TeacherAddQuizzesFragment : Fragment() {
             subjectName = subjectName
         )
         
-        val transaction = parentFragmentManager.beginTransaction()
-        transaction.replace(R.id.fragment_teacher_home, createQuestionFragment)
-        transaction.addToBackStack(null)
-        transaction.commit()
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_teacher_home, createQuestionFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+    
+    private fun navigateToQuizList() {
+        val quizListFragment = TeacherQuizListFragment()
+        
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_teacher_home, quizListFragment)
+            .addToBackStack(null)
+            .commit()
     }
 }

@@ -1,6 +1,9 @@
 package com.example.brainnode.auth
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -70,6 +73,10 @@ class LoginActivity : AppCompatActivity() {
         if (!email.isNullOrEmpty()) {
             etEmail.setText(email)
             etPassword.requestFocus()
+        } else {
+            // For testing - pre-fill with test account
+            etEmail.setText("test@teacher.com")
+            etPassword.setText("123456")
         }
     }
     
@@ -82,29 +89,66 @@ class LoginActivity : AppCompatActivity() {
             return
         }
         
+        // Check network connectivity
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "No internet connection. Please check your network.", Toast.LENGTH_LONG).show()
+            return
+        }
+        
         // Show loading state
         btnContinue.isEnabled = false
         btnContinue.text = "Signing In..."
         
         // Sign in with Firebase
         lifecycleScope.launch {
-            val result = authRepository.signIn(email, password)
-            
-            result.fold(
-                onSuccess = { user ->
-                    Toast.makeText(this@LoginActivity, "Welcome back, ${user.name}!", Toast.LENGTH_SHORT).show()
-                    
-                    // Navigate based on user type
-                    navigateToHome(user.userType)
-                },
-                onFailure = { exception ->
-                    Toast.makeText(this@LoginActivity, "Login failed: ${exception.message}", Toast.LENGTH_LONG).show()
-                    
-                    // Reset button state
-                    btnContinue.isEnabled = true
-                    btnContinue.text = "Continue"
-                }
-            )
+            try {
+                val result = authRepository.signIn(email, password)
+                
+                result.fold(
+                    onSuccess = { user ->
+                        Toast.makeText(this@LoginActivity, "Welcome back, ${user.name}!", Toast.LENGTH_SHORT).show()
+                        
+                        // Navigate based on user type
+                        navigateToHome(user.userType)
+                    },
+                    onFailure = { exception ->
+                        val errorMessage = when {
+                            exception.message?.contains("network", ignoreCase = true) == true -> 
+                                "Network error. Please check your internet connection and try again."
+                            exception.message?.contains("password", ignoreCase = true) == true -> 
+                                "Invalid email or password. Please try again."
+                            exception.message?.contains("user", ignoreCase = true) == true -> 
+                                "No account found with this email. Please sign up first."
+                            else -> "Login failed: ${exception.message}"
+                        }
+                        
+                        Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
+                        
+                        // Reset button state
+                        btnContinue.isEnabled = true
+                        btnContinue.text = "Continue"
+                    }
+                )
+            } catch (e: Exception) {
+                Toast.makeText(this@LoginActivity, "Unexpected error: ${e.message}", Toast.LENGTH_LONG).show()
+                
+                // Reset button state
+                btnContinue.isEnabled = true
+                btnContinue.text = "Continue"
+            }
+        }
+    }
+    
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+            else -> false
         }
     }
     

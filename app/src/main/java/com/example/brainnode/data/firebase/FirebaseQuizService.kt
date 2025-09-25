@@ -54,18 +54,32 @@ class FirebaseQuizService {
     
     suspend fun getQuizzesByTeacher(teacherId: String): Result<List<Quiz>> {
         return try {
-            val querySnapshot = quizzesCollection
-                .whereEqualTo("teacherId", teacherId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .get()
-                .await()
+            // First try the simple query without where clause to avoid index issues
+            val querySnapshot = quizzesCollection.get().await()
             
             val quizzes = querySnapshot.documents.mapNotNull { doc ->
                 doc.toObject(Quiz::class.java)
-            }
+            }.filter { quiz ->
+                quiz.teacherId == teacherId
+            }.sortedByDescending { it.createdAt }
+            
             Result.success(quizzes)
         } catch (e: Exception) {
-            Result.failure(e)
+            // If that fails, try the where query
+            try {
+                val querySnapshot = quizzesCollection
+                    .whereEqualTo("teacherId", teacherId)
+                    .get()
+                    .await()
+                
+                val quizzes = querySnapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Quiz::class.java)
+                }.sortedByDescending { it.createdAt }
+                
+                Result.success(quizzes)
+            } catch (e2: Exception) {
+                Result.failure(e2)
+            }
         }
     }
     
@@ -74,13 +88,29 @@ class FirebaseQuizService {
             val querySnapshot = quizzesCollection
                 .whereEqualTo("subject", subject)
                 .whereEqualTo("isPublished", true)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
             val quizzes = querySnapshot.documents.mapNotNull { doc ->
                 doc.toObject(Quiz::class.java)
-            }
+            }.sortedByDescending { it.createdAt }
+            
+            Result.success(quizzes)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getAllQuizzes(): Result<List<Quiz>> {
+        return try {
+            val querySnapshot = quizzesCollection
+                .get()
+                .await()
+            
+            val quizzes = querySnapshot.documents.mapNotNull { doc ->
+                doc.toObject(Quiz::class.java)
+            }.sortedByDescending { it.createdAt }
+            
             Result.success(quizzes)
         } catch (e: Exception) {
             Result.failure(e)
@@ -91,13 +121,13 @@ class FirebaseQuizService {
         return try {
             val querySnapshot = quizzesCollection
                 .whereEqualTo("isPublished", true)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
             val quizzes = querySnapshot.documents.mapNotNull { doc ->
                 doc.toObject(Quiz::class.java)
-            }
+            }.sortedByDescending { it.createdAt }
+            
             Result.success(quizzes)
         } catch (e: Exception) {
             Result.failure(e)
