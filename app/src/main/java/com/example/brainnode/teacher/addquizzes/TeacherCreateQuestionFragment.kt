@@ -27,6 +27,12 @@ class TeacherCreateQuestionFragment : Fragment() {
     private val authRepository = AuthRepository()
     private val createdQuestions = mutableListOf<QuizQuestion>()
     private lateinit var subjectEnum: Subject
+    
+    // Edit mode properties
+    private var isEditMode = false
+    private var quizId = ""
+    private var existingQuizData: Map<String, Any>? = null
+    private var currentQuestionIndex = 0
 
     companion object {
         private const val ARG_QUESTION_NUMBER = "question_number"
@@ -46,15 +52,46 @@ class TeacherCreateQuestionFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            currentQuestionNumber = it.getInt(ARG_QUESTION_NUMBER, 1)
-            totalQuestions = it.getInt(ARG_TOTAL_QUESTIONS, 5)
-            subjectName = it.getString(ARG_SUBJECT_NAME, "")
+        arguments?.let { args ->
+            // Check if this is edit mode
+            val mode = args.getString("mode", "create")
+            isEditMode = mode == "edit"
+            
+            if (isEditMode) {
+                // Edit mode setup
+                quizId = args.getString("quiz_id", "")
+                currentQuestionIndex = args.getInt("question_index", 0)
+                val quizDataJson = args.getString("quiz_data", "")
+                
+                if (quizDataJson.isNotEmpty()) {
+                    try {
+                        existingQuizData = com.google.gson.Gson().fromJson(
+                            quizDataJson, 
+                            object : com.google.gson.reflect.TypeToken<Map<String, Any>>() {}.type
+                        )
+                        
+                        // Extract quiz info from existing data
+                        existingQuizData?.let { data ->
+                            subjectName = data["subject"] as? String ?: ""
+                            val questions = data["questions"] as? List<Map<String, Any>> ?: emptyList()
+                            totalQuestions = questions.size
+                            currentQuestionNumber = currentQuestionIndex + 1
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(requireContext(), "Error loading quiz data", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                // Create mode setup
+                currentQuestionNumber = args.getInt(ARG_QUESTION_NUMBER, 1)
+                totalQuestions = args.getInt(ARG_TOTAL_QUESTIONS, 5)
+                subjectName = args.getString(ARG_SUBJECT_NAME, "")
+            }
         }
         
         // Convert subject name to Subject enum
         subjectEnum = when (subjectName.lowercase()) {
-            "operating system", "os" -> Subject.OPERATING_SYSTEM
+            "operating_system", "operating system", "os" -> Subject.OPERATING_SYSTEM
             "statistics", "stat" -> Subject.STATISTICS
             "programming", "prog" -> Subject.PROGRAMMING
             else -> Subject.OPERATING_SYSTEM
@@ -79,9 +116,54 @@ class TeacherCreateQuestionFragment : Fragment() {
     private fun setupViews(view: View) {
         val tvQuestionNumber = view.findViewById<TextView>(R.id.tvQuestionNumber)
         val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
+        val etCorrectAnswer = view.findViewById<EditText>(R.id.etCorrectAnswer)
+        val etWrongAnswer1 = view.findViewById<EditText>(R.id.etWrongAnswer1)
+        val etWrongAnswer2 = view.findViewById<EditText>(R.id.etWrongAnswer2)
+        val etWrongAnswer3 = view.findViewById<EditText>(R.id.etWrongAnswer3)
+        val etMistakeDescription = view.findViewById<EditText>(R.id.etMistakeDescription)
         
         tvQuestionNumber.text = "Question $currentQuestionNumber of $totalQuestions"
-        etQuestion.hint = "$currentQuestionNumber. Add the question..."
+        
+        if (isEditMode) {
+            etQuestion.hint = "Edit question $currentQuestionNumber..."
+            
+            // Pre-fill with existing data
+            existingQuizData?.let { quizData ->
+                val questions = quizData["questions"] as? List<Map<String, Any>> ?: emptyList()
+                if (currentQuestionIndex < questions.size) {
+                    val currentQuestion = questions[currentQuestionIndex]
+                    
+                    // Fill question text
+                    etQuestion.setText(currentQuestion["questionText"] as? String ?: "")
+                    
+                    // Fill answers
+                    val options = currentQuestion["options"] as? List<Map<String, Any>> ?: emptyList()
+                    var correctAnswer = ""
+                    val wrongAnswers = mutableListOf<String>()
+                    
+                    for (option in options) {
+                        val text = option["text"] as? String ?: ""
+                        val isCorrect = option["isCorrect"] as? Boolean ?: false
+                        
+                        if (isCorrect) {
+                            correctAnswer = text
+                        } else {
+                            wrongAnswers.add(text)
+                        }
+                    }
+                    
+                    etCorrectAnswer.setText(correctAnswer)
+                    if (wrongAnswers.size > 0) etWrongAnswer1.setText(wrongAnswers[0])
+                    if (wrongAnswers.size > 1) etWrongAnswer2.setText(wrongAnswers[1])
+                    if (wrongAnswers.size > 2) etWrongAnswer3.setText(wrongAnswers[2])
+                    
+                    // Fill explanation
+                    etMistakeDescription.setText(currentQuestion["explanation"] as? String ?: "")
+                }
+            }
+        } else {
+            etQuestion.hint = "$currentQuestionNumber. Add the question..."
+        }
     }
 
     private fun setupClickListeners(view: View) {
@@ -175,20 +257,73 @@ class TeacherCreateQuestionFragment : Fragment() {
     }
 
     private fun navigateToNextQuestion() {
-        val nextQuestionFragment = newInstance(
-            currentQuestionNumber + 1,
-            totalQuestions,
-            subjectName
-        )
-        
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_teacher_home, nextQuestionFragment)
-            .addToBackStack(null)
-            .commit()
+        if (isEditMode) {
+            // In edit mode, navigate to next question with edit data
+            val nextQuestionFragment = TeacherCreateQuestionFragment()
+            val bundle = Bundle().apply {
+                putString("quiz_id", quizId)
+                putString("mode", "edit")
+                putInt("question_index", currentQuestionIndex + 1)
+                putString("quiz_data", com.google.gson.Gson().toJson(existingQuizData))
+            }
+            nextQuestionFragment.arguments = bundle
+            
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_teacher_home, nextQuestionFragment)
+                .addToBackStack("edit_question")
+                .commit()
+        } else {
+            // Create mode - use existing logic
+            val nextQuestionFragment = newInstance(
+                currentQuestionNumber + 1,
+                totalQuestions,
+                subjectName
+            )
+            
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_teacher_home, nextQuestionFragment)
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     private fun navigateToQuizCompletion() {
-        // Use simple approach with direct Firestore access
+        if (isEditMode) {
+            // In edit mode, update the existing quiz
+            updateExistingQuiz()
+        } else {
+            // In create mode, create a new quiz
+            createNewQuiz()
+        }
+    }
+    
+    private fun updateExistingQuiz() {
+        lifecycleScope.launch {
+            try {
+                Toast.makeText(requireContext(), "Updating quiz...", Toast.LENGTH_SHORT).show()
+                
+                // Update the current question in the existing quiz data
+                saveCurrentQuestionToExistingData()
+                
+                // Update the quiz in Firestore
+                val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                firestore.collection("quizzes").document(quizId)
+                    .set(existingQuizData!!)
+                    .addOnSuccessListener {
+                        Toast.makeText(requireContext(), "Quiz updated successfully!", Toast.LENGTH_LONG).show()
+                        navigateBackToQuizList()
+                    }
+                    .addOnFailureListener { exception ->
+                        Toast.makeText(requireContext(), "Failed to update quiz: ${exception.message}", Toast.LENGTH_LONG).show()
+                    }
+                    
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error updating quiz: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    
+    private fun createNewQuiz() {
         lifecycleScope.launch {
             try {
                 // Get current user info
@@ -244,46 +379,91 @@ class TeacherCreateQuestionFragment : Fragment() {
                 
                 docRef.set(quizData)
                     .addOnSuccessListener {
-                        try {
-                            if (isAdded && context != null) {
-                                Toast.makeText(requireContext(), 
-                                    "Quiz saved successfully!", 
-                                    Toast.LENGTH_LONG).show()
-
-                                // Simple navigation without complex back stack management
-                                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                    try {
-                                        if (isAdded && context != null && parentFragmentManager != null) {
-                                            val quizListFragment = TeacherQuizListFragment()
-                                            
-                                            parentFragmentManager.beginTransaction()
-                                                .replace(R.id.fragment_teacher_home, quizListFragment)
-                                                .commitAllowingStateLoss()
-                                        }
-                                    } catch (e: Exception) {
-                                        // Navigation failed, but quiz is saved
-                                    }
-                                }, 1000) // 1 second delay
-                            }
-                        } catch (e: Exception) {
-                            // Ignore toast errors
-                        }
+                        Toast.makeText(requireContext(), "Quiz saved successfully!", Toast.LENGTH_LONG).show()
+                        navigateBackToQuizList()
                     }
                     .addOnFailureListener { exception ->
-                        val errorMessage = "Failed to save quiz: ${exception.message}"
-                        Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
-                        
-                        // Show what to do in Firebase Console
-                        Toast.makeText(requireContext(), 
-                            "Please check Firebase Console security rules", 
-                            Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "Failed to save quiz: ${exception.message}", Toast.LENGTH_LONG).show()
                     }
 
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), 
-                    "Error: ${e.message}", 
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+    
+    private fun saveCurrentQuestionToExistingData() {
+        // Get current question data from the form
+        val view = requireView()
+        val etQuestion = view.findViewById<EditText>(R.id.etQuestion)
+        val etCorrectAnswer = view.findViewById<EditText>(R.id.etCorrectAnswer)
+        val etWrongAnswer1 = view.findViewById<EditText>(R.id.etWrongAnswer1)
+        val etWrongAnswer2 = view.findViewById<EditText>(R.id.etWrongAnswer2)
+        val etWrongAnswer3 = view.findViewById<EditText>(R.id.etWrongAnswer3)
+        val etMistakeDescription = view.findViewById<EditText>(R.id.etMistakeDescription)
+        
+        val questionText = etQuestion.text.toString().trim()
+        val correctAnswerText = etCorrectAnswer.text.toString().trim()
+        val wrongAnswers = listOf(
+            etWrongAnswer1.text.toString().trim(),
+            etWrongAnswer2.text.toString().trim(),
+            etWrongAnswer3.text.toString().trim()
+        ).filter { it.isNotEmpty() }
+        
+        // Create options
+        val allOptions = mutableListOf<String>()
+        allOptions.add(correctAnswerText)
+        allOptions.addAll(wrongAnswers)
+        allOptions.shuffle()
+        
+        val correctAnswerIndex = allOptions.indexOf(correctAnswerText)
+        val options = allOptions.mapIndexed { index, text ->
+            hashMapOf(
+                "id" to UUID.randomUUID().toString(),
+                "text" to text,
+                "isCorrect" to (index == correctAnswerIndex)
+            )
+        }
+        
+        // Update the question in existing quiz data
+        existingQuizData?.let { data ->
+            val questions = (data["questions"] as? MutableList<MutableMap<String, Any>>) ?: mutableListOf()
+            
+            val updatedQuestion = hashMapOf(
+                "id" to UUID.randomUUID().toString(),
+                "questionText" to questionText,
+                "options" to options,
+                "correctAnswerId" to options[correctAnswerIndex]["id"] as String,
+                "explanation" to etMistakeDescription.text.toString().trim()
+            )
+            
+            if (currentQuestionIndex < questions.size) {
+                questions[currentQuestionIndex] = updatedQuestion
+            } else {
+                questions.add(updatedQuestion)
+            }
+            
+            (data as MutableMap<String, Any>)["questions"] = questions
+        }
+    }
+    
+    private fun navigateBackToQuizList() {
+        try {
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                try {
+                    if (isAdded && context != null && parentFragmentManager != null) {
+                        val quizListFragment = TeacherQuizListFragment()
+                        
+                        parentFragmentManager.beginTransaction()
+                            .replace(R.id.fragment_teacher_home, quizListFragment)
+                            .commitAllowingStateLoss()
+                    }
+                } catch (e: Exception) {
+                    // Navigation failed
+                }
+            }, 1000)
+        } catch (e: Exception) {
+            // Ignore errors
         }
     }
 }
