@@ -37,21 +37,6 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <!-- Quiz Tag -->
-            <TextView
-                android:id="@+id/tvQuizTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/light_tag_bg"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
-                android:text="Quiz 5 : OS"
-                android:textColor="#333333"
-                android:textSize="12sp"
-                android:textStyle="bold" />
 
             <!-- Counter -->
             <TextView

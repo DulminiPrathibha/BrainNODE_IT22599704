@@ -26,7 +26,6 @@ class MistakeCardsAdapter(
 
     inner class MistakeCardViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvMscTag: TextView = itemView.findViewById(R.id.tvMscTag)
-        private val tvQuizTag: TextView = itemView.findViewById(R.id.tvQuizTag)
         private val tvCounter: TextView = itemView.findViewById(R.id.tvCounter)
         private val tvQuestion: TextView = itemView.findViewById(R.id.tvQuestion)
         private val tvYourAnswer: TextView = itemView.findViewById(R.id.tvYourAnswer)
@@ -37,7 +36,6 @@ class MistakeCardsAdapter(
 
         fun bind(mistakeCard: MistakeCard) {
             tvMscTag.text = "MSC : ${mistakeCard.mscNumber}"
-            tvQuizTag.text = mistakeCard.quizInfo
             tvCounter.text = mistakeCard.position
             tvQuestion.text = mistakeCard.questionText
             tvYourAnswer.text = mistakeCard.userAnswer
