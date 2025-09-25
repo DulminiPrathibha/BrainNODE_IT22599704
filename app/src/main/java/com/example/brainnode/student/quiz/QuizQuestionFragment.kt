@@ -16,7 +16,12 @@ import com.example.brainnode.R
 import com.example.brainnode.data.models.Quiz
 import com.example.brainnode.data.models.QuizQuestion
 import com.example.brainnode.data.models.QuizOption
+import com.example.brainnode.data.models.MistakeCard
+import com.example.brainnode.data.models.QuizAttempt
+import com.example.brainnode.data.models.StudentAnswer
 import com.example.brainnode.data.repository.QuizRepository
+import com.example.brainnode.data.repository.MistakeCardRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class QuizQuestionFragment : Fragment() {
@@ -33,11 +38,14 @@ class QuizQuestionFragment : Fragment() {
     private var selectedAnswer: QuizOption? = null
     
     private val quizRepository = QuizRepository()
+    private val mistakeCardRepository = MistakeCardRepository()
+    private val auth = FirebaseAuth.getInstance()
     private var currentQuiz: Quiz? = null
     private var currentQuestionIndex = 0
     private var quizId: String = ""
     private var correctAnswers = 0
-    private val userAnswers = mutableListOf<String?>()
+    private val userAnswers = mutableListOf<StudentAnswer>()
+    private val mistakeQuestions = mutableListOf<QuizQuestion>()
     
     companion object {
         private const val ARG_QUIZ_ID = "quiz_id"
@@ -195,13 +203,40 @@ class QuizQuestionFragment : Fragment() {
                     // Process the answer
                     selectedAnswer?.let { answer ->
                         val isCorrect = answer.id == currentQuestion.correctAnswerId
+                        val correctOption = currentQuestion.options.find { it.id == currentQuestion.correctAnswerId }
+                        
+                        // Create StudentAnswer object
+                        val studentAnswer = StudentAnswer(
+                            questionId = currentQuestion.id,
+                            selectedOptionId = answer.id,
+                            correctOptionId = currentQuestion.correctAnswerId,
+                            isCorrect = isCorrect,
+                            timeSpent = 0L // We can track this later if needed
+                        )
+                        userAnswers.add(studentAnswer)
+                        
                         if (isCorrect) {
                             correctAnswers++
+                            println("✅ Correct answer for question: ${currentQuestion.questionText}")
+                        } else {
+                            // Add to mistake questions for later processing
+                            mistakeQuestions.add(currentQuestion)
+                            println("❌ Wrong answer for question: ${currentQuestion.questionText}")
+                            println("Selected: ${answer.text}, Correct: ${correctOption?.text}")
                         }
-                        userAnswers.add(answer.id)
                     } ?: run {
-                        // No answer selected
-                        userAnswers.add(null)
+                        // No answer selected - treat as incorrect
+                        val correctOption = currentQuestion.options.find { it.id == currentQuestion.correctAnswerId }
+                        val studentAnswer = StudentAnswer(
+                            questionId = currentQuestion.id,
+                            selectedOptionId = "",
+                            correctOptionId = currentQuestion.correctAnswerId,
+                            isCorrect = false,
+                            timeSpent = 0L
+                        )
+                        userAnswers.add(studentAnswer)
+                        mistakeQuestions.add(currentQuestion)
+                        println("❌ No answer selected for question: ${currentQuestion.questionText}")
                     }
                     
                     moveToNextQuestion()
@@ -247,6 +282,12 @@ class QuizQuestionFragment : Fragment() {
     
     private fun showQuizCompletion() {
         currentQuiz?.let { quiz ->
+            println("🏁 Quiz completed! Score: $correctAnswers/${quiz.questions.size}")
+            println("📝 Total mistake questions: ${mistakeQuestions.size}")
+            
+            // Submit quiz attempt and create mistake cards
+            submitQuizAttempt(quiz)
+            
             val completionFragment = QuizCompletionFragment.newInstance(
                 score = correctAnswers,
                 totalQuestions = quiz.questions.size,
@@ -257,6 +298,97 @@ class QuizQuestionFragment : Fragment() {
                 .replace(R.id.fragment_container, completionFragment)
                 .addToBackStack(null)
                 .commit()
+        }
+    }
+    
+    private fun submitQuizAttempt(quiz: Quiz) {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            // Handle user not logged in
+            return
+        }
+        
+        lifecycleScope.launch {
+            try {
+                // Create quiz attempt
+                val quizAttempt = QuizAttempt(
+                    studentId = currentUser.uid,
+                    studentName = currentUser.displayName ?: "Student",
+                    quizId = quiz.id,
+                    quizTitle = quiz.title,
+                    subject = quiz.subject,
+                    answers = userAnswers,
+                    score = correctAnswers,
+                    totalQuestions = quiz.questions.size,
+                    timeSpent = 0L, // We can track this later
+                    completedAt = System.currentTimeMillis(),
+                    isCompleted = true
+                )
+                
+                // Submit quiz attempt
+                quizRepository.submitQuizAttempt(quizAttempt)
+                
+                // Create mistake cards for incorrect answers
+                createMistakeCards(quiz, currentUser.uid, currentUser.displayName ?: "Student")
+                
+            } catch (e: Exception) {
+                // Handle error - but don't block the UI
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    private suspend fun createMistakeCards(quiz: Quiz, studentId: String, studentName: String) {
+        try {
+            println("Creating mistake cards for ${mistakeQuestions.size} incorrect answers")
+            
+            // Get next MSC number for this student
+            val nextMscResult = mistakeCardRepository.getNextMscNumber(studentId)
+            var mscNumber = nextMscResult.getOrNull() ?: 1
+            
+            println("Next MSC number: $mscNumber")
+            
+            // Create mistake cards for each incorrect answer
+            for (i in mistakeQuestions.indices) {
+                val question = mistakeQuestions[i]
+                val studentAnswer = userAnswers.find { it.questionId == question.id }
+                
+                if (studentAnswer != null && !studentAnswer.isCorrect) {
+                    val correctOption = question.options.find { it.id == question.correctAnswerId }
+                    val selectedOption = question.options.find { it.id == studentAnswer.selectedOptionId }
+                    
+                    val mistakeCard = MistakeCard(
+                        studentId = studentId,
+                        studentName = studentName,
+                        quizId = quiz.id,
+                        quizTitle = quiz.title,
+                        subject = quiz.subject,
+                        questionId = question.id,
+                        questionText = question.questionText,
+                        correctOptionId = question.correctAnswerId,
+                        correctOptionText = correctOption?.text ?: "",
+                        selectedOptionId = studentAnswer.selectedOptionId,
+                        selectedOptionText = selectedOption?.text ?: "No answer selected",
+                        explanation = question.explanation.ifEmpty { "Review this question and understand the correct answer." },
+                        mscNumber = mscNumber++,
+                        createdAt = System.currentTimeMillis(),
+                        isResolved = false
+                    )
+                    
+                    println("Creating mistake card: MSC $mscNumber for question: ${question.questionText}")
+                    val result = mistakeCardRepository.createMistakeCard(mistakeCard)
+                    result.fold(
+                        onSuccess = { id -> println("Successfully created mistake card with ID: $id") },
+                        onFailure = { e -> 
+                            println("Failed to create mistake card: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            println("Exception creating mistake cards: ${e.message}")
+            e.printStackTrace()
         }
     }
     

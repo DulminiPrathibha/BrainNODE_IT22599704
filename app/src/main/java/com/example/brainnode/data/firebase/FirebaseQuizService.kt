@@ -241,4 +241,20 @@ class FirebaseQuizService {
             Result.failure(e)
         }
     }
+    
+    suspend fun hasStudentAttemptedQuiz(studentId: String, quizId: String): Result<Boolean> {
+        return try {
+            val querySnapshot = attemptsCollection
+                .whereEqualTo("studentId", studentId)
+                .whereEqualTo("quizId", quizId)
+                .whereEqualTo("isCompleted", true)
+                .limit(1)
+                .get()
+                .await()
+            
+            Result.success(querySnapshot.documents.isNotEmpty())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

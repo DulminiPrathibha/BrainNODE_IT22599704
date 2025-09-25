@@ -7,9 +7,15 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.brainnode.R
+import com.example.brainnode.data.models.MistakeCard
 
 class MistakeCardsAdapter(
-    private val mistakeCards: List<MistakeCard>
+    private val mistakeCards: List<MistakeCard>,
+    private val onResolveClick: (MistakeCard) -> Unit,
+    private val onNextClick: () -> Unit,
+    private val onDeleteClick: (MistakeCard) -> Unit,
+    private val currentPosition: Int = 1,
+    private val totalCards: Int = 1
 ) : RecyclerView.Adapter<MistakeCardsAdapter.MistakeCardViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MistakeCardViewHolder {
@@ -35,23 +41,23 @@ class MistakeCardsAdapter(
         private val btnDelete: Button = itemView.findViewById(R.id.btnDelete)
 
         fun bind(mistakeCard: MistakeCard) {
-            tvMscTag.text = "MSC : ${mistakeCard.mscNumber}"
-            tvCounter.text = mistakeCard.position
+            tvMscTag.text = mistakeCard.getFormattedMscNumber()
+            tvCounter.text = "$currentPosition/$totalCards"
             tvQuestion.text = mistakeCard.questionText
-            tvYourAnswer.text = mistakeCard.userAnswer
-            tvNote.text = mistakeCard.note
+            tvYourAnswer.text = mistakeCard.selectedOptionText
+            tvNote.text = mistakeCard.explanation
 
             // Set click listeners
             btnResolve.setOnClickListener {
-                // Handle resolve action
+                onResolveClick(mistakeCard)
             }
 
             btnNext.setOnClickListener {
-                // Handle next action
+                onNextClick()
             }
 
             btnDelete.setOnClickListener {
-                // Handle delete action
+                onDeleteClick(mistakeCard)
             }
         }
     }

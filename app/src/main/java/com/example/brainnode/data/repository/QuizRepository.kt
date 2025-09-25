@@ -69,4 +69,8 @@ class QuizRepository {
     suspend fun getStudentQuizHistory(studentId: String, quizId: String): Result<List<QuizAttempt>> {
         return quizService.getStudentQuizHistory(studentId, quizId)
     }
+    
+    suspend fun hasStudentAttemptedQuiz(studentId: String, quizId: String): Result<Boolean> {
+        return quizService.hasStudentAttemptedQuiz(studentId, quizId)
+    }
 }
