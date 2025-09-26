@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.brainnode.R
@@ -171,7 +172,7 @@ class MistakeCardsFragment : Fragment() {
     }
     
     private fun resolveMistakeCard(mistakeCard: MistakeCard) {
-        // Navigate to resolve fragment for resolving
+        // Navigate to resolve fragment using Navigation Component
         val resolveFragment = MistakeCardResolveFragment.newInstance(mistakeCard.id)
         
         parentFragmentManager.beginTransaction()

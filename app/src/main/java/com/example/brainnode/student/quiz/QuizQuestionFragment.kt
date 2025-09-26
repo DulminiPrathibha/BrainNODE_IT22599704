@@ -10,6 +10,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.brainnode.R
@@ -291,7 +292,7 @@ class QuizQuestionFragment : Fragment() {
             val completionFragment = QuizCompletionFragment.newInstance(
                 score = correctAnswers,
                 totalQuestions = quiz.questions.size,
-                isFirstQuiz = true // For UI demo purposes, always show as first quiz
+                isFirstQuiz = true
             )
             
             parentFragmentManager.beginTransaction()

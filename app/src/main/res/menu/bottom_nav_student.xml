@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/bottom_nav_student">
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-</navigation>
+    <item
+        android:id="@+id/navigation_student_home"
+        android:icon="@drawable/student_home__navbar_icon"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/navigation_student_notes"
+        android:icon="@drawable/student_notes_navbar_icon"
+        android:title="Notes" />
+
+    <item
+        android:id="@+id/navigation_student_quiz"
+        android:icon="@drawable/student_quiz_navbar_icon"
+        android:title="Quiz" />
+
+    <item
+        android:id="@+id/navigation_student_profile"
+        android:icon="@drawable/student_profile_navbar_icon"
+        android:title="Profile" />
+
+</menu>

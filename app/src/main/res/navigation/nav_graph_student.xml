@@ -1,6 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/nav_graph_student">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph_student"
+    app:startDestination="@id/navigation_student_home">
+
+    <fragment
+        android:id="@+id/navigation_student_home"
+        android:name="com.example.brainnode.student.home.StudentHomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_student_home" />
+
+    <fragment
+        android:id="@+id/navigation_student_notes"
+        android:name="com.example.brainnode.student.notes.NotesSubjectSelectionFragment"
+        android:label="Notes"
+        tools:layout="@layout/fragment_student_notes_subject_selection" />
+
+    <fragment
+        android:id="@+id/navigation_student_quiz"
+        android:name="com.example.brainnode.student.quizzes.QuizzesFragment"
+        android:label="Quiz"
+        tools:layout="@layout/fragment_student_quizzes" />
+
+    <fragment
+        android:id="@+id/navigation_student_profile"
+        android:name="com.example.brainnode.student.profile.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_student_profile" />
+
+    <!-- Additional fragments for navigation -->
+    <fragment
+        android:id="@+id/mistakeCardsFragment"
+        android:name="com.example.brainnode.student.MistakeCardsFragment"
+        android:label="Mistake Cards" />
+
+    <fragment
+        android:id="@+id/mistakeCardResolveFragment"
+        android:name="com.example.brainnode.student.MistakeCardResolveFragment"
+        android:label="Resolve Mistake Card" />
+
+    <fragment
+        android:id="@+id/notesLessonSelectionFragment"
+        android:name="com.example.brainnode.student.notes.NotesLessonSelectionFragment"
+        android:label="Lesson Selection" />
+
+    <fragment
+        android:id="@+id/studentNotesFragment"
+        android:name="com.example.brainnode.student.notes.StudentNotesFragment"
+        android:label="Notes Content" />
+
+    <fragment
+        android:id="@+id/studentNotesSummaryFragment"
+        android:name="com.example.brainnode.student.notes.StudentNotesSummaryFragment"
+        android:label="Notes Summary" />
+
+    <fragment
+        android:id="@+id/quizQuestionFragment"
+        android:name="com.example.brainnode.student.quiz.QuizQuestionFragment"
+        android:label="Quiz Question" />
+
+    <fragment
+        android:id="@+id/quizCompletionFragment"
+        android:name="com.example.brainnode.student.quiz.QuizCompletionFragment"
+        android:label="Quiz Completion" />
 
 </navigation>

@@ -49,16 +49,16 @@ class StudentHomeFragment : Fragment() {
         }
         
         notesLayout.setOnClickListener {
-            // Navigate to Notes Subject Selection screen
-            val notesSubjectSelectionFragment = NotesSubjectSelectionFragment()
+            // Navigate to Notes section
+            val notesFragment = NotesSubjectSelectionFragment()
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, notesSubjectSelectionFragment)
+            transaction.replace(R.id.fragment_container, notesFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }
         
         quizLayout.setOnClickListener {
-            // Navigate to Quiz screen
+            // Navigate to Quiz section
             val quizzesFragment = QuizzesFragment()
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, quizzesFragment)
