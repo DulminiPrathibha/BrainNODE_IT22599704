@@ -43,7 +43,15 @@ class MistakeCardsFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        // Reload mistake cards when returning from resolve fragment
+        
+        // Always reload when fragment resumes - this ensures fresh data after card resolution
+        println("🔄 Fragment resumed - force reloading mistake cards...")
+        
+        // Clear current data first
+        mistakeCards.clear()
+        currentMistakeIndex = 0
+        
+        // Force reload from Firebase to get updated list
         loadMistakeCards()
     }
 
@@ -83,10 +91,10 @@ class MistakeCardsFragment : Fragment() {
                     onSuccess = { allCards ->
                         println("📊 Total mistake cards found: ${allCards.size}")
                         
-                        // Filter out test cards and invalid cards
-                        val validCards = allCards.filter { card ->
-                            val isValid = !card.quizId.startsWith("test_") && card.quizId.isNotEmpty()
-                            if (!isValid) {
+                        // Filter out test cards and invalid cards - only keep valid unresolved cards
+                        val validUnresolvedCards = allCards.filter { card ->
+                            val isValid = !card.quizId.startsWith("test_") && card.quizId.isNotEmpty() && !card.isResolved
+                            if (card.quizId.startsWith("test_") || card.quizId.isEmpty()) {
                                 println("🗑️ Filtering out invalid card: Quiz ID = ${card.quizId}")
                                 // Optionally delete invalid test cards
                                 lifecycleScope.launch {
@@ -96,30 +104,25 @@ class MistakeCardsFragment : Fragment() {
                             isValid
                         }
                         
-                        println("📊 Valid mistake cards: ${validCards.size}")
-                        validCards.forEachIndexed { index, card ->
-                            println("Card $index: MSC ${card.mscNumber}, Resolved: ${card.isResolved}")
+                        println("📊 Valid unresolved mistake cards: ${validUnresolvedCards.size}")
+                        validUnresolvedCards.forEachIndexed { index, card ->
+                            println("Card $index: MSC ${card.mscNumber}")
                             println("  Quiz ID: ${card.quizId}")
                             println("  Question ID: ${card.questionId}")
                             println("  Question: ${card.questionText.take(50)}...")
                         }
                         
-                        // Now get only unresolved valid cards
-                        val unresolvedCards = validCards.filter { !it.isResolved }
-                        println("🔄 Unresolved valid cards: ${unresolvedCards.size}")
-                        
                         mistakeCards.clear()
-                        mistakeCards.addAll(unresolvedCards)
+                        mistakeCards.addAll(validUnresolvedCards)
                         
                         if (mistakeCards.isEmpty()) {
-                            if (validCards.isEmpty()) {
-                                Toast.makeText(context, "No mistake cards found. Take a quiz and make some mistakes first!", Toast.LENGTH_LONG).show()
-                            } else {
-                                Toast.makeText(context, "All mistake cards resolved! Great job!", Toast.LENGTH_LONG).show()
-                            }
+                            Toast.makeText(context, "🎉 All mistake cards resolved! Excellent work!", Toast.LENGTH_LONG).show()
+                            // Navigate to home immediately
                             navigateToHome()
                         } else {
                             println("✅ Showing ${mistakeCards.size} unresolved mistake cards")
+                            // Reset current index to 0 to always show the first unresolved card
+                            currentMistakeIndex = 0
                             showCurrentMistakeCard()
                         }
                     },
@@ -148,6 +151,9 @@ class MistakeCardsFragment : Fragment() {
             val currentCard = mistakeCards[currentMistakeIndex]
             val singleCardList = listOf(currentCard)
             
+            println("📱 Showing mistake card ${currentMistakeIndex + 1} of ${mistakeCards.size}")
+            println("🎯 Current card: MSC ${currentCard.mscNumber} - ${currentCard.questionText.take(50)}...")
+            
             mistakeCardsAdapter = MistakeCardsAdapter(
                 mistakeCards = singleCardList,
                 onResolveClick = { mistakeCard -> resolveMistakeCard(mistakeCard) },
@@ -158,6 +164,9 @@ class MistakeCardsFragment : Fragment() {
             )
             
             rvMistakeCards.adapter = mistakeCardsAdapter
+        } else {
+            println("⚠️ No more mistake cards to show")
+            navigateToHome()
         }
     }
     
@@ -193,10 +202,10 @@ class MistakeCardsFragment : Fragment() {
                         mistakeCards.removeAt(currentMistakeIndex)
                         
                         if (mistakeCards.isEmpty()) {
-                            Toast.makeText(context, "No more mistake cards!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "🎉 No more mistake cards! Excellent work!", Toast.LENGTH_SHORT).show()
                             navigateToHome()
                         } else {
-                            // Adjust index if needed
+                            // Adjust index if needed - if we deleted the last card, go to the previous one
                             if (currentMistakeIndex >= mistakeCards.size) {
                                 currentMistakeIndex = mistakeCards.size - 1
                             }
@@ -214,6 +223,7 @@ class MistakeCardsFragment : Fragment() {
     }
     
     private fun navigateToHome() {
+        println("🏠 Navigating back to student home")
         val homeFragment = StudentHomeFragment()
         
         parentFragmentManager.beginTransaction()

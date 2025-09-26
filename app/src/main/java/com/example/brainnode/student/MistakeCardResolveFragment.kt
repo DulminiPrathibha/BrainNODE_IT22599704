@@ -279,21 +279,30 @@ class MistakeCardResolveFragment : Fragment() {
     private fun resolveMistakeCard() {
         lifecycleScope.launch {
             try {
-                val result = mistakeCardRepository.resolveMistakeCard(mistakeCardId)
+                println("🎉 Deleting resolved mistake card: $mistakeCardId")
+                val result = mistakeCardRepository.deleteMistakeCard(mistakeCardId)
                 result.fold(
                     onSuccess = {
                         countDownTimer?.cancel()
-                        Toast.makeText(context, "Well done! Mistake card resolved.", Toast.LENGTH_LONG).show()
+                        println("✅ Mistake card deleted successfully")
                         
-                        // Navigate back to mistake cards fragment
+                        // Show success message
+                        Toast.makeText(context, "Well done! Mistake card resolved and removed.", Toast.LENGTH_LONG).show()
+                        
+                        // Add delay to ensure Firebase deletion propagates and UI sees the message
+                        kotlinx.coroutines.delay(1500)
+                        
+                        // Navigate back to mistake cards fragment which will automatically show next card or home
                         parentFragmentManager.popBackStack()
                     },
                     onFailure = { exception ->
-                        Toast.makeText(context, "Failed to resolve mistake card: ${exception.message}", Toast.LENGTH_SHORT).show()
+                        println("❌ Failed to delete mistake card: ${exception.message}")
+                        Toast.makeText(context, "Failed to delete mistake card: ${exception.message}", Toast.LENGTH_SHORT).show()
                     }
                 )
             } catch (e: Exception) {
-                Toast.makeText(context, "Error resolving mistake card", Toast.LENGTH_SHORT).show()
+                println("💥 Exception deleting mistake card: ${e.message}")
+                Toast.makeText(context, "Error deleting mistake card", Toast.LENGTH_SHORT).show()
             }
         }
     }

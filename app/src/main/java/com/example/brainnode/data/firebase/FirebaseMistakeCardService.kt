@@ -62,6 +62,7 @@ class FirebaseMistakeCardService {
     // Mark mistake card as resolved
     suspend fun resolveMistakeCard(mistakeCardId: String): Result<Unit> {
         return try {
+            println("🔧 Updating mistake card $mistakeCardId to resolved=true")
             mistakeCardsCollection.document(mistakeCardId)
                 .update(
                     mapOf(
@@ -70,8 +71,10 @@ class FirebaseMistakeCardService {
                     )
                 )
                 .await()
+            println("✅ Successfully updated mistake card $mistakeCardId")
             Result.success(Unit)
         } catch (e: Exception) {
+            println("❌ Failed to update mistake card: ${e.message}")
             Result.failure(e)
         }
     }
