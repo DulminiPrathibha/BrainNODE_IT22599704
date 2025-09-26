@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.lifecycleScope
 import com.example.brainnode.R
-import com.example.brainnode.teacher.addnotes.TeacherAddNotesFragment
+import com.example.brainnode.teacher.addnotes.AddingNotesTemplateFragment
 import com.example.brainnode.teacher.addquizzes.TeacherAddQuizzesFragment
 import com.example.brainnode.teacher.progress.ManageStudentsProgressFragment
 import com.example.brainnode.data.repository.AuthRepository
@@ -46,10 +46,10 @@ class TeacherHomeFragment : Fragment() {
         
         val addNotesCard = view.findViewById<LinearLayout>(R.id.llAddNotes)
         addNotesCard.setOnClickListener {
-            // Navigate to Add Notes fragment using fragment transaction
-            val addNotesFragment = TeacherAddNotesFragment()
+            // Navigate directly to Adding Notes Template fragment
+            val addingNotesFragment = AddingNotesTemplateFragment.newInstance("", "")
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, addNotesFragment)
+            transaction.replace(R.id.fragment_container, addingNotesFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }

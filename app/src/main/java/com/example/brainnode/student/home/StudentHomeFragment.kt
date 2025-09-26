@@ -12,7 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.brainnode.R
 import com.example.brainnode.student.quizzes.QuizzesFragment
 import com.example.brainnode.student.MistakeCardsFragment
-import com.example.brainnode.student.notes.NotesSubjectSelectionFragment
+import com.example.brainnode.student.StudentNewLessonSubjectListFragment
 import com.example.brainnode.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
@@ -49,10 +49,10 @@ class StudentHomeFragment : Fragment() {
         }
         
         notesLayout.setOnClickListener {
-            // Navigate to Notes section
-            val notesFragment = NotesSubjectSelectionFragment()
+            // Navigate to Student Lesson Subject List
+            val lessonListFragment = StudentNewLessonSubjectListFragment.newInstance()
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, notesFragment)
+            transaction.replace(R.id.fragment_container, lessonListFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }

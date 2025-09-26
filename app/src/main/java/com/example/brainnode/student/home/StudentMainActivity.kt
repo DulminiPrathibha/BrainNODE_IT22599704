@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.brainnode.R
-import com.example.brainnode.student.notes.NotesSubjectSelectionFragment
+import com.example.brainnode.student.StudentNewLessonSubjectListFragment
 import com.example.brainnode.student.profile.ProfileFragment
 import com.example.brainnode.student.quizzes.QuizzesFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -29,7 +29,7 @@ class StudentMainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.navigation_student_notes -> {
-                    loadFragment(NotesSubjectSelectionFragment())
+                    loadFragment(StudentNewLessonSubjectListFragment.newInstance())
                     true
                 }
                 R.id.navigation_student_quiz -> {

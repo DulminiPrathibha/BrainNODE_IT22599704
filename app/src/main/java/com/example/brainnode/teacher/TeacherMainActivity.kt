@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.brainnode.R
-import com.example.brainnode.teacher.addnotes.TeacherAddNotesFragment
+import com.example.brainnode.teacher.addnotes.AddingNotesTemplateFragment
 import com.example.brainnode.teacher.addquizzes.TeacherAddQuizzesFragment
 import com.example.brainnode.teacher.home.TeacherHomeFragment
 import com.example.brainnode.teacher.progress.ManageStudentsProgressFragment
@@ -30,7 +30,7 @@ class TeacherMainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.navigation_teacher_add_notes -> {
-                    loadFragment(TeacherAddNotesFragment())
+                    loadFragment(AddingNotesTemplateFragment.newInstance("", ""))
                     true
                 }
                 R.id.navigation_teacher_add_quiz -> {

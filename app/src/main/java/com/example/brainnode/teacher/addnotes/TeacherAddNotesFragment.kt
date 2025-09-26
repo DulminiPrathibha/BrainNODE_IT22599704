@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.brainnode.R
+import com.example.brainnode.teacher.addnotes.AddingNotesTemplateFragment
 
 class TeacherAddNotesFragment : Fragment() {
 
@@ -50,14 +51,13 @@ class TeacherAddNotesFragment : Fragment() {
         llDatabase.setOnClickListener {
             navigateToAddNoteForm("Database")
         }
-
         llProgramming.setOnClickListener {
             navigateToAddNoteForm("Programming")
         }
     }
 
     private fun navigateToAddNoteForm(subjectName: String) {
-        // Navigate to lessons list first, then to add note form
+        // Navigate to adding quiz template with subject context
         val subjectCode = when (subjectName) {
             "Operating System" -> "OS"
             "Statistics" -> "STAT"
@@ -66,7 +66,7 @@ class TeacherAddNotesFragment : Fragment() {
             else -> ""
         }
         
-        val fragment = TeacherLessonsListFragment.newInstance(subjectName, subjectCode)
+        val fragment = AddingNotesTemplateFragment.newInstance(subjectName, subjectCode)
         
         parentFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
