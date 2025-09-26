@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    android:background="@drawable/rounded_white_background"
+    android:elevation="4dp"
+    android:orientation="horizontal"
+    android:padding="20dp"
+    android:gravity="center_vertical">
+
+    <!-- Lesson Title -->
+    <TextView
+        android:id="@+id/tvStudentLessonTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Operating System - lesson 1"
+        android:textColor="#333333"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- Arrow Icon -->
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_arrow_right"
+        android:contentDescription="Arrow"
+        android:tint="#FF8A50" />
+
+</LinearLayout>
