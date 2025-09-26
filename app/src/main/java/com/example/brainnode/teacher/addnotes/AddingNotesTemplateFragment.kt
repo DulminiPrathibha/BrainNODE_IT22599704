@@ -7,9 +7,13 @@ import android.view.ViewGroup
 import android.widget.Toast
 import android.widget.Button
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.brainnode.R
 import com.example.brainnode.teacher.addnotes.TeacherAddNotesFragment
+import com.example.brainnode.data.repository.LessonRepository
+import com.example.brainnode.data.models.LessonItem
 import android.widget.EditText
+import kotlinx.coroutines.launch
 
 class AddingNotesTemplateFragment : Fragment() {
 
@@ -22,6 +26,7 @@ class AddingNotesTemplateFragment : Fragment() {
 
     private var subjectName: String = ""
     private var subjectCode: String = ""
+    private val lessonRepository = LessonRepository()
 
     companion object {
         private const val ARG_SUBJECT_NAME = "subject_name"
@@ -43,6 +48,10 @@ class AddingNotesTemplateFragment : Fragment() {
             subjectName = it.getString(ARG_SUBJECT_NAME, "")
             subjectCode = it.getString(ARG_SUBJECT_CODE, "")
         }
+        
+        // Debug logging
+        println("DEBUG AddingNotesTemplate: subjectName = '$subjectName'")
+        println("DEBUG AddingNotesTemplate: subjectCode = '$subjectCode'")
     }
 
     override fun onCreateView(
@@ -111,11 +120,62 @@ class AddingNotesTemplateFragment : Fragment() {
             return
         }
 
-        // For now, just show success message and navigate back
-        Toast.makeText(context, "Note published successfully!", Toast.LENGTH_SHORT).show()
-        
-        // Navigate back to lesson subject list
-        navigateBackToSubjects()
+        // Save lesson to Firebase
+        saveNoteToFirebase(title, content, summary)
+    }
+
+    private fun saveNoteToFirebase(title: String, content: String, summary: String) {
+        lifecycleScope.launch {
+            try {
+                // Show loading state
+                btnPublish.isEnabled = false
+                btnPublish.text = "Publishing..."
+
+                // Determine lesson number by counting existing lessons for this subject
+                val existingLessonsResult = lessonRepository.getLessonsByTeacher()
+                val lessonNumber = if (existingLessonsResult.isSuccess) {
+                    val existingLessons = existingLessonsResult.getOrNull() ?: emptyList()
+                    val subjectLessons = existingLessons.filter { it.subjectName == subjectName }
+                    subjectLessons.size + 1
+                } else {
+                    1
+                }
+
+                // Create lesson object
+                val lesson = LessonItem(
+                    title = title,
+                    subjectName = subjectName.ifEmpty { "General" },
+                    lessonNumber = lessonNumber,
+                    content = content,
+                    summary = summary
+                )
+
+                println("DEBUG: Creating lesson with data:")
+                println("  - title: '$title'")
+                println("  - subjectName: '${lesson.subjectName}'")
+                println("  - lessonNumber: $lessonNumber")
+                println("  - content length: ${content.length}")
+                println("  - summary length: ${summary.length}")
+
+                // Save to Firebase
+                val result = lessonRepository.createLesson(lesson)
+                
+                if (result.isSuccess) {
+                    Toast.makeText(context, "Lesson published successfully!", Toast.LENGTH_SHORT).show()
+                    // Navigate back to lesson subject list
+                    navigateBackToSubjects()
+                } else {
+                    val error = result.exceptionOrNull()
+                    Toast.makeText(context, "Failed to publish lesson: ${error?.message}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                // Reset button state
+                btnPublish.isEnabled = true
+                btnPublish.text = "Publish"
+            }
+        }
     }
 
     private fun getSubjectCode(subjectName: String): String {
