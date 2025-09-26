@@ -39,7 +39,7 @@ class TeacherHomeFragment : Fragment() {
             // Navigate to Student Progress fragment using fragment transaction
             val studentProgressFragment = ManageStudentsProgressFragment()
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_teacher_home, studentProgressFragment)
+            transaction.replace(R.id.fragment_container, studentProgressFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }
@@ -49,7 +49,7 @@ class TeacherHomeFragment : Fragment() {
             // Navigate to Add Notes fragment using fragment transaction
             val addNotesFragment = TeacherAddNotesFragment()
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_teacher_home, addNotesFragment)
+            transaction.replace(R.id.fragment_container, addNotesFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }
@@ -59,7 +59,7 @@ class TeacherHomeFragment : Fragment() {
             // Navigate to Add Quiz fragment using fragment transaction
             val addQuizFragment = TeacherAddQuizzesFragment()
             val transaction: FragmentTransaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_teacher_home, addQuizFragment)
+            transaction.replace(R.id.fragment_container, addQuizFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }

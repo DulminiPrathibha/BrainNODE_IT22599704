@@ -198,7 +198,7 @@ class TeacherQuizListFragment : Fragment() {
             val addQuizzesFragment = TeacherAddQuizzesFragment()
             
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_teacher_home, addQuizzesFragment)
+                .replace(R.id.fragment_container, addQuizzesFragment)
                 .addToBackStack("add_quiz")
                 .commit()
                 
@@ -248,7 +248,7 @@ class TeacherQuizListFragment : Fragment() {
             editFragment.arguments = bundle
             
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_teacher_home, editFragment)
+                .replace(R.id.fragment_container, editFragment)
                 .addToBackStack("edit_quiz")
                 .commit()
                 

@@ -272,7 +272,7 @@ class TeacherCreateQuestionFragment : Fragment() {
             nextQuestionFragment.arguments = bundle
             
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_teacher_home, nextQuestionFragment)
+                .replace(R.id.fragment_container, nextQuestionFragment)
                 .addToBackStack("edit_question")
                 .commit()
         } else {
@@ -284,7 +284,7 @@ class TeacherCreateQuestionFragment : Fragment() {
             )
             
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_teacher_home, nextQuestionFragment)
+                .replace(R.id.fragment_container, nextQuestionFragment)
                 .addToBackStack(null)
                 .commit()
         }
@@ -459,7 +459,7 @@ class TeacherCreateQuestionFragment : Fragment() {
                         val quizListFragment = TeacherQuizListFragment()
                         
                         parentFragmentManager.beginTransaction()
-                            .replace(R.id.fragment_teacher_home, quizListFragment)
+                            .replace(R.id.fragment_container, quizListFragment)
                             .commitAllowingStateLoss()
                     }
                 } catch (e: Exception) {

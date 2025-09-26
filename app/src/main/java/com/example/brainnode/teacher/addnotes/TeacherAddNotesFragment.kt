@@ -69,7 +69,7 @@ class TeacherAddNotesFragment : Fragment() {
         val fragment = TeacherLessonsListFragment.newInstance(subjectName, subjectCode)
         
         parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_teacher_home, fragment)
+            .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()
     }

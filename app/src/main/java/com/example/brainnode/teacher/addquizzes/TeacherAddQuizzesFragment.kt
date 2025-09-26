@@ -79,7 +79,7 @@ class TeacherAddQuizzesFragment : Fragment() {
         )
         
         parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_teacher_home, createQuestionFragment)
+            .replace(R.id.fragment_container, createQuestionFragment)
             .addToBackStack(null)
             .commit()
     }
@@ -88,7 +88,7 @@ class TeacherAddQuizzesFragment : Fragment() {
         val quizListFragment = TeacherQuizListFragment()
         
         parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_teacher_home, quizListFragment)
+            .replace(R.id.fragment_container, quizListFragment)
             .addToBackStack(null)
             .commit()
     }

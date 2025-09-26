@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/bottom_nav_teacher">
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-</navigation>
+    <item
+        android:id="@+id/navigation_teacher_home"
+        android:icon="@drawable/teacher_home__navbar_icon"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/navigation_teacher_add_notes"
+        android:icon="@drawable/teacher_addnotes_navbar_icon"
+        android:title="Add Notes" />
+
+    <item
+        android:id="@+id/navigation_teacher_add_quiz"
+        android:icon="@drawable/teacher_addquiz_navbar_icon"
+        android:title="Add Quizzes" />
+
+    <item
+        android:id="@+id/navigation_teacher_progress"
+        android:icon="@drawable/teacher_overall_student_progress_navbar_icon"
+        android:title="Progress" />
+
+</menu>

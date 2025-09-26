@@ -98,7 +98,7 @@ class TeacherQuizSubjectListFragment : Fragment() {
         }
 
         parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_teacher_home, addQuizFragment)
+            .replace(R.id.fragment_container, addQuizFragment)
             .addToBackStack(null)
             .commit()
     }
