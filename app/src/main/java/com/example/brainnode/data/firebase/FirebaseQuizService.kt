@@ -257,4 +257,78 @@ class FirebaseQuizService {
             Result.failure(e)
         }
     }
+    
+    // Statistics Methods
+    suspend fun calculateOverallAverageScore(): Result<Double> {
+        return try {
+            val querySnapshot = attemptsCollection
+                .whereEqualTo("isCompleted", true)
+                .get()
+                .await()
+            
+            val attempts = querySnapshot.documents.mapNotNull { doc ->
+                doc.toObject(QuizAttempt::class.java)
+            }
+            
+            if (attempts.isEmpty()) {
+                Result.success(0.0)
+            } else {
+                val totalScore = attempts.sumOf { it.score }
+                val totalQuestions = attempts.sumOf { it.totalQuestions }
+                val averagePercentage = if (totalQuestions > 0) {
+                    (totalScore.toDouble() / totalQuestions.toDouble()) * 100
+                } else 0.0
+                
+                Result.success(averagePercentage)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getStudentStatistics(): Result<List<com.example.brainnode.data.models.StudentStatistics>> {
+        return try {
+            val querySnapshot = attemptsCollection
+                .whereEqualTo("isCompleted", true)
+                .get()
+                .await()
+            
+            val attempts = querySnapshot.documents.mapNotNull { doc ->
+                doc.toObject(QuizAttempt::class.java)
+            }
+            
+            if (attempts.isEmpty()) {
+                Result.success(emptyList())
+            } else {
+                val studentStats = attempts
+                    .groupBy { it.studentId }
+                    .map { (studentId, studentAttempts) ->
+                        val totalScore = studentAttempts.sumOf { it.score }
+                        val totalQuestions = studentAttempts.sumOf { it.totalQuestions }
+                        val averagePercentage = if (totalQuestions > 0) {
+                            (totalScore.toDouble() / totalQuestions.toDouble()) * 100
+                        } else 0.0
+                        
+                        val bestAttempt = studentAttempts.maxByOrNull { it.getPercentageScore() }
+                        val worstAttempt = studentAttempts.minByOrNull { it.getPercentageScore() }
+                        
+                        com.example.brainnode.data.models.StudentStatistics(
+                            studentId = studentId,
+                            studentName = studentAttempts.firstOrNull()?.studentName ?: "",
+                            totalQuizzesTaken = studentAttempts.size,
+                            totalScore = totalScore,
+                            totalQuestions = totalQuestions,
+                            averagePercentage = averagePercentage,
+                            bestScore = bestAttempt?.score ?: 0,
+                            worstScore = worstAttempt?.score ?: 0,
+                            lastQuizDate = studentAttempts.maxOfOrNull { it.completedAt } ?: 0L
+                        )
+                    }
+                
+                Result.success(studentStats)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

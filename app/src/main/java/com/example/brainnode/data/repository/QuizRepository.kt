@@ -73,4 +73,13 @@ class QuizRepository {
     suspend fun hasStudentAttemptedQuiz(studentId: String, quizId: String): Result<Boolean> {
         return quizService.hasStudentAttemptedQuiz(studentId, quizId)
     }
+    
+    // Statistics Methods
+    suspend fun calculateOverallAverageScore(): Result<Double> {
+        return quizService.calculateOverallAverageScore()
+    }
+    
+    suspend fun getStudentStatistics(): Result<List<com.example.brainnode.data.models.StudentStatistics>> {
+        return quizService.getStudentStatistics()
+    }
 }
