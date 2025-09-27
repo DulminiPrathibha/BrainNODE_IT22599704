@@ -104,6 +104,18 @@ class LeadersLearnersFragment : Fragment() {
                         return@onSuccess
                     }
                     
+                    // Get unique student IDs and fetch their names
+                    val studentIds = validAttempts.map { it.studentId }.distinct()
+                    println("👤 Fetching names for ${studentIds.size} unique students")
+                    
+                    // Fetch user names
+                    val authService = com.example.brainnode.data.firebase.FirebaseAuthService()
+                    val userNamesResult = authService.getUsersByIds(studentIds)
+                    val userNames = userNamesResult.getOrElse { 
+                        println("⚠️ Failed to fetch user names, using fallbacks")
+                        emptyMap() 
+                    }
+                    
                     // Group attempts by student and calculate statistics
                     val studentStats = validAttempts
                         .groupBy { it.studentId }
@@ -117,9 +129,14 @@ class LeadersLearnersFragment : Fragment() {
                             val bestAttempt = studentAttempts.maxByOrNull { it.getPercentageScore() }
                             val worstAttempt = studentAttempts.minByOrNull { it.getPercentageScore() }
                             
+                            // Use fetched name or fallback
+                            val studentName = userNames[studentId] 
+                                ?: studentAttempts.firstOrNull()?.studentName?.takeIf { it.isNotEmpty() }
+                                ?: "Student ${studentId.take(6)}"
+                            
                             val stats = StudentStatistics(
                                 studentId = studentId,
-                                studentName = studentAttempts.firstOrNull()?.studentName ?: "",
+                                studentName = studentName,
                                 totalQuizzesTaken = studentAttempts.size,
                                 totalScore = totalScore,
                                 totalQuestions = totalQuestions,
@@ -129,7 +146,7 @@ class LeadersLearnersFragment : Fragment() {
                                 lastQuizDate = studentAttempts.maxOfOrNull { it.completedAt } ?: 0L
                             )
                             
-                            println("👤 Student $studentId: ${studentAttempts.size} quizzes, $averagePercentage% average")
+                            println("👤 Student $studentName ($studentId): ${studentAttempts.size} quizzes, $averagePercentage% average")
                             stats
                         }
                         .sortedByDescending { it.averagePercentage }
@@ -141,12 +158,29 @@ class LeadersLearnersFragment : Fragment() {
                         return@onSuccess
                     }
                     
-                    // Split into top and bottom performers
-                    val topPerformers = studentStats.take(5) // Top 5 students
-                    val bottomPerformers = if (studentStats.size > 5) {
-                        studentStats.takeLast(3) // Bottom 3 students
-                    } else {
-                        emptyList()
+                    // Split into top and bottom performers based on student count
+                    val totalStudents = studentStats.size
+                    val (topPerformers, bottomPerformers) = when {
+                        totalStudents <= 1 -> {
+                            // Only 1 student - show in top performers
+                            Pair(studentStats, emptyList())
+                        }
+                        totalStudents == 2 -> {
+                            // 2 students - top 1, bottom 1
+                            Pair(studentStats.take(1), studentStats.takeLast(1))
+                        }
+                        totalStudents == 3 -> {
+                            // 3 students - top 2, bottom 1
+                            Pair(studentStats.take(2), studentStats.takeLast(1))
+                        }
+                        totalStudents == 4 -> {
+                            // 4 students - top 2, bottom 2
+                            Pair(studentStats.take(2), studentStats.takeLast(2))
+                        }
+                        else -> {
+                            // 5+ students - top 3, bottom 2
+                            Pair(studentStats.take(3), studentStats.takeLast(2))
+                        }
                     }
                     
                     println("🏆 Top performers: ${topPerformers.size}")

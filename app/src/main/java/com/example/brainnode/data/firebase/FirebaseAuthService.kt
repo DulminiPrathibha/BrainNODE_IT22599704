@@ -210,4 +210,38 @@ class FirebaseAuthService {
             Result.failure(e)
         }
     }
+    
+    suspend fun getUsersByIds(userIds: List<String>): Result<Map<String, String>> {
+        return try {
+            val userNames = mutableMapOf<String, String>()
+            
+            // Fetch users in batches to avoid Firestore limits
+            userIds.chunked(10).forEach { batch ->
+                val querySnapshot = firestore.collection("users")
+                    .whereIn("uid", batch)
+                    .get()
+                    .await()
+                
+                querySnapshot.documents.forEach { doc ->
+                    val user = doc.toObject(User::class.java)
+                    if (user != null) {
+                        userNames[user.uid] = user.name.ifEmpty { "Student ${user.uid.take(6)}" }
+                    }
+                }
+            }
+            
+            // For any missing users, add fallback names
+            userIds.forEach { uid ->
+                if (!userNames.containsKey(uid)) {
+                    userNames[uid] = "Student ${uid.take(6)}"
+                }
+            }
+            
+            println("📝 Fetched names for ${userNames.size} users")
+            Result.success(userNames)
+        } catch (e: Exception) {
+            println("❌ Error fetching user names: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }

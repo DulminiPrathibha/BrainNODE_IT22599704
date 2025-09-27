@@ -217,9 +217,7 @@ class FirebaseQuizService {
             println("📊 getAllQuizAttempts: Found ${querySnapshot.documents.size} total attempts")
             
             val attempts = querySnapshot.documents.mapNotNull { doc ->
-                val attempt = doc.toObject(QuizAttempt::class.java)
-                println("📄 Attempt: ${attempt?.studentId}, completed: ${attempt?.isCompleted}, score: ${attempt?.score}/${attempt?.totalQuestions}")
-                attempt
+                doc.toObject(QuizAttempt::class.java)
             }.sortedByDescending { it.completedAt }
             
             println("✅ Returning ${attempts.size} attempts")
@@ -272,16 +270,12 @@ class FirebaseQuizService {
             val allAttemptsSnapshot = attemptsCollection.get().await()
             println("🔍 Total documents in quiz_attempts: ${allAttemptsSnapshot.documents.size}")
             
-            // Debug: Print all documents
-            allAttemptsSnapshot.documents.forEach { doc ->
+            // Debug: Print summary of documents
+            val completedCount = allAttemptsSnapshot.documents.count { doc ->
                 val attempt = doc.toObject(QuizAttempt::class.java)
-                println("📄 Document ID: ${doc.id}")
-                println("   - isCompleted: ${attempt?.isCompleted}")
-                println("   - score: ${attempt?.score}")
-                println("   - totalQuestions: ${attempt?.totalQuestions}")
-                println("   - studentId: ${attempt?.studentId}")
-                println("   - studentName: ${attempt?.studentName}")
+                attempt?.isCompleted == true
             }
+            println("📄 Documents summary: ${completedCount} marked as completed out of ${allAttemptsSnapshot.documents.size} total")
             
             // Get all attempts and filter manually (more reliable than Firestore query)
             val allAttempts = allAttemptsSnapshot.documents.mapNotNull { doc ->
@@ -344,6 +338,18 @@ class FirebaseQuizService {
                 println("⚠️ No completed attempts found for student statistics")
                 Result.success(emptyList())
             } else {
+                // Get unique student IDs
+                val studentIds = completedAttempts.map { it.studentId }.distinct()
+                println("👤 Fetching names for ${studentIds.size} unique students")
+                
+                // Fetch user names from auth service
+                val authService = FirebaseAuthService()
+                val userNamesResult = authService.getUsersByIds(studentIds)
+                val userNames = userNamesResult.getOrElse { 
+                    println("⚠️ Failed to fetch user names, using fallbacks")
+                    emptyMap() 
+                }
+                
                 val studentStats = completedAttempts
                     .groupBy { it.studentId }
                     .map { (studentId, studentAttempts) ->
@@ -356,9 +362,14 @@ class FirebaseQuizService {
                         val bestAttempt = studentAttempts.maxByOrNull { it.getPercentageScore() }
                         val worstAttempt = studentAttempts.minByOrNull { it.getPercentageScore() }
                         
+                        // Use fetched name or fallback
+                        val studentName = userNames[studentId] 
+                            ?: studentAttempts.firstOrNull()?.studentName?.takeIf { it.isNotEmpty() }
+                            ?: "Student ${studentId.take(6)}"
+                        
                         val stats = com.example.brainnode.data.models.StudentStatistics(
                             studentId = studentId,
-                            studentName = studentAttempts.firstOrNull()?.studentName ?: "",
+                            studentName = studentName,
                             totalQuizzesTaken = studentAttempts.size,
                             totalScore = totalScore,
                             totalQuestions = totalQuestions,
@@ -368,7 +379,7 @@ class FirebaseQuizService {
                             lastQuizDate = studentAttempts.maxOfOrNull { it.completedAt } ?: 0L
                         )
                         
-                        println("📊 Student $studentId: ${studentAttempts.size} quizzes, $averagePercentage% average")
+                        println("📊 Student $studentName ($studentId): ${studentAttempts.size} quizzes, $averagePercentage% average")
                         stats
                     }
                 
