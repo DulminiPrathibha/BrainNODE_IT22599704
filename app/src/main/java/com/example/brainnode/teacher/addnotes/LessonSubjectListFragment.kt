@@ -1,6 +1,7 @@
 package com.example.brainnode.teacher.addnotes
 
 import android.app.AlertDialog
+import com.example.brainnode.utils.CustomSubjectDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -242,27 +243,20 @@ class LessonSubjectListFragment : Fragment() {
     }
 
     private fun showSubjectSelectionDialog() {
-        val editText = EditText(context)
-        editText.hint = "Enter subject name (e.g., Operating System, Mathematics)"
-        
-        AlertDialog.Builder(context)
-            .setTitle("Select Subject")
-            .setMessage("Enter the subject name for this lesson:")
-            .setView(editText)
-            .setPositiveButton("Continue") { _, _ ->
-                val selectedSubject = editText.text.toString().trim()
-                if (selectedSubject.isNotEmpty()) {
-                    // Navigate to AddingNotesTemplateFragment with selected subject
-                    val addNotesFragment = AddingNotesTemplateFragment.newInstance(selectedSubject, "")
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, addNotesFragment)
-                        .addToBackStack(null)
-                        .commit()
-                } else {
-                    Toast.makeText(context, "Please enter a subject name", Toast.LENGTH_SHORT).show()
-                }
+        val customDialog = CustomSubjectDialog(
+            context = requireContext(),
+            onContinue = { subjectName ->
+                // Navigate to AddingNotesTemplateFragment with selected subject
+                val addNotesFragment = AddingNotesTemplateFragment.newInstance(subjectName, "")
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, addNotesFragment)
+                    .addToBackStack(null)
+                    .commit()
+            },
+            onCancel = {
+                // Handle cancel if needed
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        )
+        customDialog.show()
     }
 }
