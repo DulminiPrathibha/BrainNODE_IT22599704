@@ -26,4 +26,9 @@ class LessonRepository {
     suspend fun getLessonById(lessonId: String): Result<LessonItem?> {
         return firebaseLessonService.getLessonById(lessonId)
     }
+    
+    // Method for students to get all available lessons
+    suspend fun getAllLessons(): Result<List<LessonItem>> {
+        return firebaseLessonService.getAllLessons()
+    }
 }

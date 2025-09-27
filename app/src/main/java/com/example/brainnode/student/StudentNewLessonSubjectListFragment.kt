@@ -6,11 +6,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.brainnode.R
 import com.example.brainnode.data.models.LessonItem
+import com.example.brainnode.data.repository.LessonRepository
+import com.example.brainnode.student.notes.StudentNotesFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.launch
 
 class StudentNewLessonSubjectListFragment : Fragment() {
 
@@ -18,6 +22,7 @@ class StudentNewLessonSubjectListFragment : Fragment() {
     private lateinit var fabAddStudentLesson: FloatingActionButton
     private lateinit var studentLessonAdapter: StudentLessonCardAdapter
     private val lessons = mutableListOf<LessonItem>()
+    private val lessonRepository = LessonRepository()
 
     companion object {
         fun newInstance(): StudentNewLessonSubjectListFragment {
@@ -39,7 +44,7 @@ class StudentNewLessonSubjectListFragment : Fragment() {
         initializeViews(view)
         setupRecyclerView()
         setupClickListeners()
-        loadAvailableLessons()
+        loadLessonsFromFirebase()
     }
 
     private fun initializeViews(view: View) {
@@ -61,56 +66,69 @@ class StudentNewLessonSubjectListFragment : Fragment() {
 
     private fun setupClickListeners() {
         fabAddStudentLesson.setOnClickListener {
-            // For students, this might navigate to a request lesson screen
-            // or show available lessons to add
-            Toast.makeText(context, "Request new lesson feature", Toast.LENGTH_SHORT).show()
+            // Hide FAB for students - they can't add lessons
+            fabAddStudentLesson.visibility = View.GONE
         }
     }
 
-    private fun loadAvailableLessons() {
-        // Load lessons available to the student
-        // This would typically fetch from Firebase based on student's enrolled subjects
-        val availableLessons = listOf(
-            LessonItem(
-                id = "1",
-                title = "Introduction to Operating Systems",
-                subjectName = "Operating System",
-                lessonNumber = 1,
-                content = "Learn the basics of operating systems",
-                summary = "Introduction to OS concepts"
-            ),
-            LessonItem(
-                id = "2",
-                title = "Process Management",
-                subjectName = "Operating System",
-                lessonNumber = 2,
-                content = "Understanding processes and threads",
-                summary = "Process management concepts"
-            ),
-            LessonItem(
-                id = "3",
-                title = "Basic Statistics",
-                subjectName = "Statistics",
-                lessonNumber = 1,
-                content = "Introduction to statistical concepts",
-                summary = "Statistics fundamentals"
-            )
-        )
-        
-        lessons.addAll(availableLessons)
-        studentLessonAdapter.notifyDataSetChanged()
+    private fun loadLessonsFromFirebase() {
+        lifecycleScope.launch {
+            try {
+                val result = lessonRepository.getAllLessons()
+                if (result.isSuccess) {
+                    val allLessons = result.getOrNull() ?: emptyList()
+                    
+                    println("DEBUG Student: Total lessons loaded: ${allLessons.size}")
+                    allLessons.forEach { lesson ->
+                        println("DEBUG Student: Lesson - ID: ${lesson.id}, Title: ${lesson.title}, Subject: ${lesson.subjectName}")
+                    }
+                    
+                    lessons.clear()
+                    lessons.addAll(allLessons)
+                    studentLessonAdapter.notifyDataSetChanged()
+                    
+                    if (allLessons.isEmpty()) {
+                        Toast.makeText(context, "No lessons available yet", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Loaded ${allLessons.size} lessons", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    val error = result.exceptionOrNull()
+                    println("DEBUG Student: Error loading lessons: ${error?.message}")
+                    Toast.makeText(context, "Failed to load lessons: ${error?.message}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                println("DEBUG Student: Exception loading lessons: ${e.message}")
+                Toast.makeText(context, "Error loading lessons: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh lessons when returning to this fragment
+        loadLessonsFromFirebase()
     }
 
     private fun openLesson(lesson: LessonItem) {
-        // Navigate to lesson content view for students
-        // This would open the lesson content, notes, and possibly quizzes
-        Toast.makeText(context, "Opening lesson: ${lesson.title}", Toast.LENGTH_SHORT).show()
+        // Navigate to StudentNotesFragment with lesson data
+        println("DEBUG Student: Opening lesson: ${lesson.title} from subject: ${lesson.subjectName}")
         
-        // TODO: Navigate to student lesson content fragment
-        // val lessonContentFragment = StudentLessonContentFragment.newInstance(lesson.id)
-        // parentFragmentManager.beginTransaction()
-        //     .replace(R.id.fragment_container, lessonContentFragment)
-        //     .addToBackStack(null)
-        //     .commit()
+        val bundle = Bundle().apply {
+            putString("subject_name", lesson.subjectName)
+            putString("lesson_title", lesson.title)
+            putString("lesson_content", lesson.content)
+            putString("lesson_summary", lesson.summary)
+            putString("lesson_id", lesson.id)
+        }
+        
+        val studentNotesFragment = StudentNotesFragment().apply {
+            arguments = bundle
+        }
+        
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, studentNotesFragment)
+            .addToBackStack(null)
+            .commit()
     }
 }

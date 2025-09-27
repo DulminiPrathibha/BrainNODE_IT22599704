@@ -149,4 +149,42 @@ class FirebaseLessonService {
             Result.failure(e)
         }
     }
+    
+    // Method for students to get all available lessons
+    suspend fun getAllLessons(): Result<List<LessonItem>> {
+        return try {
+            println("DEBUG: Getting all lessons for students")
+            
+            val querySnapshot = lessonsCollection
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            println("DEBUG: Total documents in lessons collection: ${querySnapshot.documents.size}")
+            
+            val allLessons = querySnapshot.documents.mapNotNull { document ->
+                try {
+                    LessonItem(
+                        id = document.id,
+                        title = document.getString("title") ?: "",
+                        subjectName = document.getString("subjectName") ?: "",
+                        lessonNumber = document.getLong("lessonNumber")?.toInt() ?: 1,
+                        content = document.getString("content") ?: "",
+                        summary = document.getString("summary") ?: "",
+                        createdAt = document.getLong("createdAt") ?: 0L,
+                        updatedAt = document.getLong("updatedAt") ?: 0L
+                    )
+                } catch (e: Exception) {
+                    println("DEBUG: Error parsing document ${document.id}: ${e.message}")
+                    null
+                }
+            }
+            
+            println("DEBUG: Successfully parsed ${allLessons.size} lessons for students")
+            Result.success(allLessons)
+        } catch (e: Exception) {
+            println("DEBUG: Exception in getAllLessons: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }

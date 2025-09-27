@@ -14,6 +14,9 @@ class StudentNotesSummaryFragment : Fragment() {
     
     private var subjectName: String = "Operating System"
     private var lessonTitle: String = "1. Introduction to OS"
+    private var lessonContent: String = ""
+    private var lessonSummary: String = ""
+    private var lessonId: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,6 +33,9 @@ class StudentNotesSummaryFragment : Fragment() {
         // Get data from arguments
         subjectName = arguments?.getString("subject_name") ?: "Operating System"
         lessonTitle = arguments?.getString("lesson_title") ?: "1. Introduction to OS"
+        lessonContent = arguments?.getString("lesson_content") ?: ""
+        lessonSummary = arguments?.getString("lesson_summary") ?: ""
+        lessonId = arguments?.getString("lesson_id") ?: ""
         
         setupUI()
         setupClickListeners()
@@ -40,8 +46,12 @@ class StudentNotesSummaryFragment : Fragment() {
         val badgeText = "${getSubjectAbbreviation(subjectName)} : ${getLessonNumber(lessonTitle)}"
         binding.tvLessonBadge.text = badgeText
         
-        // Set summary content based on subject and lesson
-        binding.tvSummaryContent.text = getSummaryContent(subjectName, lessonTitle)
+        // Set summary content - use Firebase summary if available, otherwise fallback to hardcoded content
+        binding.tvSummaryContent.text = if (lessonSummary.isNotEmpty()) {
+            lessonSummary
+        } else {
+            getSummaryContent(subjectName, lessonTitle)
+        }
     }
 
     private fun getSubjectAbbreviation(subject: String): String {

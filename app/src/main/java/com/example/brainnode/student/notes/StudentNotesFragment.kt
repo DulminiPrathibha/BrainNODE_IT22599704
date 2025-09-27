@@ -16,6 +16,9 @@ class StudentNotesFragment : Fragment() {
     
     private var subjectName: String = "Operating System"
     private var lessonTitle: String = "1. Introduction to OS"
+    private var lessonContent: String = ""
+    private var lessonSummary: String = ""
+    private var lessonId: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -32,6 +35,9 @@ class StudentNotesFragment : Fragment() {
         // Get data from arguments
         subjectName = arguments?.getString("subject_name") ?: "Operating System"
         lessonTitle = arguments?.getString("lesson_title") ?: "1. Introduction to OS"
+        lessonContent = arguments?.getString("lesson_content") ?: ""
+        lessonSummary = arguments?.getString("lesson_summary") ?: ""
+        lessonId = arguments?.getString("lesson_id") ?: ""
         
         setupUI()
         setupClickListeners()
@@ -42,8 +48,12 @@ class StudentNotesFragment : Fragment() {
         val badgeText = "${getSubjectAbbreviation(subjectName)} : ${getLessonNumber(lessonTitle)}"
         binding.tvLessonBadge.text = badgeText
         
-        // Set notes content based on subject and lesson
-        binding.tvNotesContent.text = getNotesContent(subjectName, lessonTitle)
+        // Set notes content - use Firebase content if available, otherwise fallback to hardcoded content
+        binding.tvNotesContent.text = if (lessonContent.isNotEmpty()) {
+            lessonContent
+        } else {
+            getNotesContent(subjectName, lessonTitle)
+        }
     }
 
     private fun getSubjectAbbreviation(subject: String): String {
@@ -148,6 +158,9 @@ class StudentNotesFragment : Fragment() {
         val bundle = Bundle().apply {
             putString("subject_name", subjectName)
             putString("lesson_title", lessonTitle)
+            putString("lesson_content", lessonContent)
+            putString("lesson_summary", lessonSummary)
+            putString("lesson_id", lessonId)
         }
         
         // Navigate to summary fragment
