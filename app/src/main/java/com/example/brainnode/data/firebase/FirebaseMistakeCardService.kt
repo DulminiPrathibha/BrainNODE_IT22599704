@@ -152,4 +152,71 @@ class FirebaseMistakeCardService {
             Result.failure(e)
         }
     }
+    
+    // Get the most common mistakes across all students (for teachers)
+    suspend fun getMostCommonMistakes(limit: Int = 2): Result<List<MistakeCard>> {
+        return try {
+            println("🔍 Fetching most common mistakes with limit: $limit")
+            
+            // Get all mistake cards from Firebase
+            val querySnapshot = mistakeCardsCollection
+                .get()
+                .await()
+            
+            val allMistakeCards = querySnapshot.documents.mapNotNull { doc ->
+                try {
+                    doc.toObject(MistakeCard::class.java)
+                } catch (e: Exception) {
+                    println("⚠️ Failed to parse mistake card: ${e.message}")
+                    null
+                }
+            }
+            
+            println("📊 Total mistake cards found: ${allMistakeCards.size}")
+            
+            if (allMistakeCards.isEmpty()) {
+                println("📭 No mistake cards found")
+                return Result.success(emptyList())
+            }
+            
+            // Group by question text and count occurrences
+            val questionFrequency = allMistakeCards
+                .filter { it.questionText.isNotBlank() } // Only include valid questions
+                .groupBy { it.questionText }
+                .mapValues { (_, cards) -> cards.size }
+            
+            println("🔢 Question frequency map: ${questionFrequency.size} unique questions")
+            
+            // Get the most frequent questions
+            val mostCommonQuestions = questionFrequency
+                .toList()
+                .sortedByDescending { (_, count) -> count }
+                .take(limit)
+            
+            println("🏆 Most common questions: ${mostCommonQuestions.map { "${it.first.take(50)}... (${it.second} times)" }}")
+            
+            // Get representative mistake cards for the most common questions
+            val mostCommonMistakes = mostCommonQuestions.mapNotNull { (questionText, count) ->
+                val representativeCard = allMistakeCards.find { it.questionText == questionText }
+                representativeCard?.let { card ->
+                    // Add frequency information to the card for display purposes
+                    card.copy(
+                        explanation = if (card.explanation.isNotBlank()) {
+                            "${card.explanation} (Incorrect ${count} times)"
+                        } else {
+                            "This question was answered incorrectly ${count} times by students."
+                        }
+                    )
+                }
+            }
+            
+            println("✅ Returning ${mostCommonMistakes.size} most common mistakes")
+            Result.success(mostCommonMistakes)
+            
+        } catch (e: Exception) {
+            println("❌ Error fetching most common mistakes: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 }

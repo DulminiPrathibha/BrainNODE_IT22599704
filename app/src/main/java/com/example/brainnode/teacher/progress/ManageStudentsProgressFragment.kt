@@ -54,8 +54,7 @@ class ManageStudentsProgressFragment : Fragment() {
         }
 
         commonMistakesCard.setOnClickListener {
-            // TODO: Navigate to Common Mistakes details screen
-            Toast.makeText(context, "Common Mistakes feature coming soon!", Toast.LENGTH_SHORT).show()
+            navigateToCommonMistakes()
         }
     }
     
@@ -107,6 +106,29 @@ class ManageStudentsProgressFragment : Fragment() {
             Toast.makeText(
                 context, 
                 "Unable to navigate to Leaders & Learners: ${e.message}", 
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    
+    private fun navigateToCommonMistakes() {
+        try {
+            println("🔄 Navigating to Common Mistakes screen...")
+            val commonMistakesFragment = CommonMistakesFragment()
+            
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, commonMistakesFragment)
+                .addToBackStack(null)
+                .commit()
+                
+            println("✅ Successfully navigated to Common Mistakes")
+                
+        } catch (e: Exception) {
+            println("❌ Failed to navigate to Common Mistakes: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(
+                context, 
+                "Unable to navigate to Common Mistakes: ${e.message}", 
                 Toast.LENGTH_SHORT
             ).show()
         }

@@ -42,4 +42,8 @@ class MistakeCardRepository {
     suspend fun hasUnresolvedMistakeCards(studentId: String): Result<Boolean> {
         return firebaseMistakeCardService.hasUnresolvedMistakeCards(studentId)
     }
+    
+    suspend fun getMostCommonMistakes(limit: Int = 2): Result<List<MistakeCard>> {
+        return firebaseMistakeCardService.getMostCommonMistakes(limit)
+    }
 }
