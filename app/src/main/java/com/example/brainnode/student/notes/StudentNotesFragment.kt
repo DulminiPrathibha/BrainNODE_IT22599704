@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.brainnode.R
 import com.example.brainnode.databinding.FragmentStudentNotesBinding
+import com.example.brainnode.utils.TTSService
 
 class StudentNotesFragment : Fragment() {
 
@@ -19,6 +20,8 @@ class StudentNotesFragment : Fragment() {
     private var lessonContent: String = ""
     private var lessonSummary: String = ""
     private var lessonId: String = ""
+    
+    private var ttsService: TTSService? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,6 +41,9 @@ class StudentNotesFragment : Fragment() {
         lessonContent = arguments?.getString("lesson_content") ?: ""
         lessonSummary = arguments?.getString("lesson_summary") ?: ""
         lessonId = arguments?.getString("lesson_id") ?: ""
+        
+        // Initialize TTS service
+        ttsService = TTSService(requireContext())
         
         setupUI()
         setupClickListeners()
@@ -148,8 +154,20 @@ class StudentNotesFragment : Fragment() {
 
         // TTS (Text-to-Speech) button click
         binding.cvTTSButton.setOnClickListener {
-            // TODO: Implement TTS functionality
-            android.util.Log.d("StudentNotes", "TTS clicked for: $subjectName - $lessonTitle")
+            val contentToRead = binding.tvNotesContent.text.toString()
+            if (contentToRead.isNotEmpty()) {
+                ttsService?.let { tts ->
+                    if (tts.isSpeaking()) {
+                        // If already speaking, stop it
+                        tts.stop()
+                    } else {
+                        // Start reading the content
+                        tts.speak(contentToRead)
+                    }
+                }
+            } else {
+                android.widget.Toast.makeText(context, "No content to read", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -174,8 +192,17 @@ class StudentNotesFragment : Fragment() {
         transaction.commit()
     }
 
+    override fun onPause() {
+        super.onPause()
+        // Stop TTS when fragment is paused
+        ttsService?.stop()
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
+        // Shutdown TTS service
+        ttsService?.shutdown()
+        ttsService = null
         _binding = null
     }
 }
