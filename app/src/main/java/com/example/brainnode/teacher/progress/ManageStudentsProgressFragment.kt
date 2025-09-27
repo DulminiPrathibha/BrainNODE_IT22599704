@@ -62,14 +62,17 @@ class ManageStudentsProgressFragment : Fragment() {
     private fun loadAverageScore() {
         lifecycleScope.launch {
             try {
+                println("🔄 Loading average score...")
                 val result = quizRepository.calculateOverallAverageScore()
                 
                 result.onSuccess { averageScore ->
+                    println("✅ Average score loaded successfully: $averageScore%")
                     // Update the UI with real average score
                     val formattedScore = String.format("%.1f%%", averageScore)
                     averageScorePercentage.text = formattedScore
                     
                 }.onFailure { exception ->
+                    println("❌ Failed to load average score: ${exception.message}")
                     // Keep the default value and show error
                     Toast.makeText(
                         context, 
@@ -79,6 +82,8 @@ class ManageStudentsProgressFragment : Fragment() {
                 }
                 
             } catch (e: Exception) {
+                println("💥 Exception loading average score: ${e.message}")
+                e.printStackTrace()
                 // Keep the default value and show error
                 Toast.makeText(
                     context, 

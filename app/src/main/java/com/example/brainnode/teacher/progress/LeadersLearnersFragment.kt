@@ -78,17 +78,34 @@ class LeadersLearnersFragment : Fragment() {
         
         lifecycleScope.launch {
             try {
+                println("🔄 Loading student statistics...")
                 val result = quizRepository.getAllQuizAttempts()
                 
                 result.onSuccess { attempts ->
+                    println("📊 Total quiz attempts found: ${attempts.size}")
+                    
                     if (attempts.isEmpty()) {
+                        println("⚠️ No quiz attempts found")
+                        showNoDataState()
+                        return@onSuccess
+                    }
+                    
+                    // Filter for valid attempts (more lenient than just isCompleted)
+                    val validAttempts = attempts.filter { it.totalQuestions > 0 && it.score >= 0 }
+                    println("✅ Valid attempts: ${validAttempts.size}")
+                    
+                    // Also check strictly completed for comparison
+                    val strictlyCompletedAttempts = attempts.filter { it.isCompleted }
+                    println("✅ Strictly completed attempts: ${strictlyCompletedAttempts.size}")
+                    
+                    if (validAttempts.isEmpty()) {
+                        println("⚠️ No valid attempts found")
                         showNoDataState()
                         return@onSuccess
                     }
                     
                     // Group attempts by student and calculate statistics
-                    val studentStats = attempts
-                        .filter { it.isCompleted }
+                    val studentStats = validAttempts
                         .groupBy { it.studentId }
                         .map { (studentId, studentAttempts) ->
                             val totalScore = studentAttempts.sumOf { it.score }
@@ -100,7 +117,7 @@ class LeadersLearnersFragment : Fragment() {
                             val bestAttempt = studentAttempts.maxByOrNull { it.getPercentageScore() }
                             val worstAttempt = studentAttempts.minByOrNull { it.getPercentageScore() }
                             
-                            StudentStatistics(
+                            val stats = StudentStatistics(
                                 studentId = studentId,
                                 studentName = studentAttempts.firstOrNull()?.studentName ?: "",
                                 totalQuizzesTaken = studentAttempts.size,
@@ -111,8 +128,13 @@ class LeadersLearnersFragment : Fragment() {
                                 worstScore = worstAttempt?.score ?: 0,
                                 lastQuizDate = studentAttempts.maxOfOrNull { it.completedAt } ?: 0L
                             )
+                            
+                            println("👤 Student $studentId: ${studentAttempts.size} quizzes, $averagePercentage% average")
+                            stats
                         }
                         .sortedByDescending { it.averagePercentage }
+                    
+                    println("📈 Generated statistics for ${studentStats.size} students")
                     
                     if (studentStats.isEmpty()) {
                         showNoDataState()
@@ -127,13 +149,20 @@ class LeadersLearnersFragment : Fragment() {
                         emptyList()
                     }
                     
+                    println("🏆 Top performers: ${topPerformers.size}")
+                    println("📚 Bottom performers: ${bottomPerformers.size}")
+                    
                     displayStudentStatistics(topPerformers, bottomPerformers)
                     
                 }.onFailure { exception ->
+                    println("❌ Failed to load student data: ${exception.message}")
+                    exception.printStackTrace()
                     showError("Failed to load student data: ${exception.message}")
                 }
                 
             } catch (e: Exception) {
+                println("💥 Exception loading student statistics: ${e.message}")
+                e.printStackTrace()
                 showError("An unexpected error occurred: ${e.message}")
             }
         }

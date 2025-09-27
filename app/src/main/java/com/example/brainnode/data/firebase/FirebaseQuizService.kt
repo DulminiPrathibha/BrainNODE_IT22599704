@@ -211,15 +211,22 @@ class FirebaseQuizService {
     suspend fun getAllQuizAttempts(): Result<List<QuizAttempt>> {
         return try {
             val querySnapshot = attemptsCollection
-                .orderBy("completedAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
+            println("📊 getAllQuizAttempts: Found ${querySnapshot.documents.size} total attempts")
+            
             val attempts = querySnapshot.documents.mapNotNull { doc ->
-                doc.toObject(QuizAttempt::class.java)
-            }
+                val attempt = doc.toObject(QuizAttempt::class.java)
+                println("📄 Attempt: ${attempt?.studentId}, completed: ${attempt?.isCompleted}, score: ${attempt?.score}/${attempt?.totalQuestions}")
+                attempt
+            }.sortedByDescending { it.completedAt }
+            
+            println("✅ Returning ${attempts.size} attempts")
             Result.success(attempts)
         } catch (e: Exception) {
+            println("❌ Error getting all quiz attempts: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }
@@ -261,46 +268,83 @@ class FirebaseQuizService {
     // Statistics Methods
     suspend fun calculateOverallAverageScore(): Result<Double> {
         return try {
-            val querySnapshot = attemptsCollection
-                .whereEqualTo("isCompleted", true)
-                .get()
-                .await()
+            // First, try to get all quiz attempts without filtering
+            val allAttemptsSnapshot = attemptsCollection.get().await()
+            println("🔍 Total documents in quiz_attempts: ${allAttemptsSnapshot.documents.size}")
             
-            val attempts = querySnapshot.documents.mapNotNull { doc ->
+            // Debug: Print all documents
+            allAttemptsSnapshot.documents.forEach { doc ->
+                val attempt = doc.toObject(QuizAttempt::class.java)
+                println("📄 Document ID: ${doc.id}")
+                println("   - isCompleted: ${attempt?.isCompleted}")
+                println("   - score: ${attempt?.score}")
+                println("   - totalQuestions: ${attempt?.totalQuestions}")
+                println("   - studentId: ${attempt?.studentId}")
+                println("   - studentName: ${attempt?.studentName}")
+            }
+            
+            // Get all attempts and filter manually (more reliable than Firestore query)
+            val allAttempts = allAttemptsSnapshot.documents.mapNotNull { doc ->
                 doc.toObject(QuizAttempt::class.java)
             }
             
-            if (attempts.isEmpty()) {
+            // Filter for completed attempts manually - be more lenient
+            val completedAttempts = allAttempts.filter { 
+                // Consider an attempt valid if it has a score and total questions > 0
+                it.totalQuestions > 0 && it.score >= 0
+            }
+            println("🎯 Valid attempts found (manual filter): ${completedAttempts.size}")
+            
+            // Also try filtering by isCompleted for comparison
+            val strictlyCompletedAttempts = allAttempts.filter { it.isCompleted && it.totalQuestions > 0 }
+            println("🎯 Strictly completed attempts: ${strictlyCompletedAttempts.size}")
+            
+            if (completedAttempts.isEmpty()) {
+                println("⚠️ No completed attempts found, returning 0.0")
                 Result.success(0.0)
             } else {
-                val totalScore = attempts.sumOf { it.score }
-                val totalQuestions = attempts.sumOf { it.totalQuestions }
+                val totalScore = completedAttempts.sumOf { it.score }
+                val totalQuestions = completedAttempts.sumOf { it.totalQuestions }
                 val averagePercentage = if (totalQuestions > 0) {
                     (totalScore.toDouble() / totalQuestions.toDouble()) * 100
                 } else 0.0
                 
+                println("📊 Calculation: $totalScore correct out of $totalQuestions total = $averagePercentage%")
                 Result.success(averagePercentage)
             }
         } catch (e: Exception) {
+            println("❌ Error calculating average score: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }
     
     suspend fun getStudentStatistics(): Result<List<com.example.brainnode.data.models.StudentStatistics>> {
         return try {
-            val querySnapshot = attemptsCollection
-                .whereEqualTo("isCompleted", true)
-                .get()
-                .await()
+            // Get all attempts without filtering first
+            val allAttemptsSnapshot = attemptsCollection.get().await()
+            println("👥 Getting student statistics from ${allAttemptsSnapshot.documents.size} total attempts")
             
-            val attempts = querySnapshot.documents.mapNotNull { doc ->
+            val allAttempts = allAttemptsSnapshot.documents.mapNotNull { doc ->
                 doc.toObject(QuizAttempt::class.java)
             }
             
-            if (attempts.isEmpty()) {
+            // Filter for completed attempts manually - be more lenient
+            val completedAttempts = allAttempts.filter { 
+                // Consider an attempt valid if it has a score and total questions > 0
+                it.totalQuestions > 0 && it.score >= 0
+            }
+            println("✅ Valid attempts for statistics: ${completedAttempts.size}")
+            
+            // Also try filtering by isCompleted for comparison
+            val strictlyCompletedAttempts = allAttempts.filter { it.isCompleted && it.totalQuestions > 0 }
+            println("✅ Strictly completed attempts for statistics: ${strictlyCompletedAttempts.size}")
+            
+            if (completedAttempts.isEmpty()) {
+                println("⚠️ No completed attempts found for student statistics")
                 Result.success(emptyList())
             } else {
-                val studentStats = attempts
+                val studentStats = completedAttempts
                     .groupBy { it.studentId }
                     .map { (studentId, studentAttempts) ->
                         val totalScore = studentAttempts.sumOf { it.score }
@@ -312,7 +356,7 @@ class FirebaseQuizService {
                         val bestAttempt = studentAttempts.maxByOrNull { it.getPercentageScore() }
                         val worstAttempt = studentAttempts.minByOrNull { it.getPercentageScore() }
                         
-                        com.example.brainnode.data.models.StudentStatistics(
+                        val stats = com.example.brainnode.data.models.StudentStatistics(
                             studentId = studentId,
                             studentName = studentAttempts.firstOrNull()?.studentName ?: "",
                             totalQuizzesTaken = studentAttempts.size,
@@ -323,11 +367,17 @@ class FirebaseQuizService {
                             worstScore = worstAttempt?.score ?: 0,
                             lastQuizDate = studentAttempts.maxOfOrNull { it.completedAt } ?: 0L
                         )
+                        
+                        println("📊 Student $studentId: ${studentAttempts.size} quizzes, $averagePercentage% average")
+                        stats
                     }
                 
+                println("✅ Generated statistics for ${studentStats.size} students")
                 Result.success(studentStats)
             }
         } catch (e: Exception) {
+            println("❌ Error getting student statistics: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }
